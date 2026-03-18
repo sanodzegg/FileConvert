@@ -8,11 +8,40 @@
     "build": "vite build",
     "start": "electron .",
     "dev:all": "concurrently -n vite,electron -c cyan,yellow \"vite\" \"electron .\"",
+    "package": "vite build && electron-builder",
+    "package:mac": "vite build && electron-builder --mac",
+    "package:win": "vite build && electron-builder --win",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "build": {
+    "appId": "com.sanodzegg.towebp",
+    "productName": "toWEBP",
+    "mac": {
+      "icon": "build-assets/icon.icns",
+      "category": "public.app-category.graphics-design",
+      "target": ["dmg", "zip"]
+    },
+    "win": {
+      "icon": "build-assets/icon.ico",
+      "target": ["nsis"]
+    },
+    "files": [
+      "dist/**",
+      "electron/**",
+      "main.js",
+      "node_modules/**",
+      "!node_modules/.cache/**",
+      "!node_modules/.vite/**"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "extraResources": [],
+    "asar": true
+  },
   "packageManager": "pnpm@10.32.1",
   "devDependencies": {
     "@tailwindcss/vite": "^4.2.1",
@@ -21,6 +50,7 @@
     "@vitejs/plugin-react": "^5.1.4",
     "concurrently": "^9.2.1",
     "electron": "^41.0.0",
+    "electron-builder": "^26.8.1",
     "tailwindcss": "^4.2.1",
     "typescript": "^5.9.3",
     "vite": "^7.3.1"
