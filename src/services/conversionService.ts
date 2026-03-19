@@ -39,7 +39,13 @@ export async function convertAll(files: File[], deps: ConversionDeps): Promise<v
 
       try {
         deps.setCurrentFileName(file.name)
-        const blob = await engine.convert(file, targetFormat, { quality })
+        const blob = await engine.convert(file, targetFormat, {
+          quality,
+          width: settings.width,
+          height: settings.height,
+          fit: settings.fit,
+          keepMetadata: settings.keepMetadata,
+        })
         deps.setConvertedFile(file, blob)
         deps.removeFile(file)
       } catch (err) {

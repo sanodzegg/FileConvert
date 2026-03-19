@@ -2,7 +2,7 @@ import LogoDark from "@/assets/logo.svg";
 import LogoLight from "@/assets/logo-bw.svg";
 import { ThemeToggle } from "../theme/theme-toggle";
 import { Button } from "../ui/button";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import {
     NavigationMenu,
     NavigationMenuContent,
@@ -33,14 +33,25 @@ function ExtensionListItem({
 }: { title: string; href: string }) {
     return (
         <li>
-            <NavigationMenuLink className={'p-1 px-2'} render={<NavLink to={href} />}>
-                <span className="text-sm font-normal">{title}</span>
-            </NavigationMenuLink>
+            <NavLink to={href}>
+                {({ isActive }) => (
+                    <NavigationMenuLink
+                        render={<span />}
+                        active={isActive}
+                        className={`p-1 px-2 rounded-md block text-sm transition-colors ${isActive ? 'font-medium text-primary' : 'font-normal text-muted-foreground hover:text-foreground'}`}
+                    >
+                        {title}
+                    </NavigationMenuLink>
+                )}
+            </NavLink>
         </li>
     )
 }
 
 export default function Navigation() {
+    const { pathname } = useLocation()
+    const isExtensionActive = pathname.startsWith('/extensions')
+
     return (
         <section className="border-b border-b-gray-200 dark:border-b-gray-50/10">
             <div className="flex items-center justify-between py-2.5 max-w-5xl mx-auto px-10">
@@ -72,8 +83,8 @@ export default function Navigation() {
                             ))}
 
                             <NavigationMenuItem>
-                                <NavigationMenuTrigger className="p-0 bg-transparent hover:bg-transparent data-popup-open:bg-transparent data-open:bg-transparent focus:bg-transparent h-auto [&>svg]:hidden">
-                                    <Button variant="outline" className="font-normal dark:border-secondary pointer-events-none gap-1">
+                                <NavigationMenuTrigger className="p-0 bg-transparent hover:bg-transparent data-popup-open:bg-transparent data-open:bg-transparent focus:bg-transparent focus:outline-none focus-visible:outline-none focus-visible:ring-0 h-auto [&>svg]:hidden">
+                                    <Button variant={isExtensionActive ? 'default' : 'outline'} className="font-normal dark:border-secondary pointer-events-none gap-1">
                                         Extensions
                                         <ChevronDown className="size-3 transition-transform duration-300 group-data-popup-open/navigation-menu-trigger:rotate-180 group-data-open/navigation-menu-trigger:rotate-180" />
                                     </Button>

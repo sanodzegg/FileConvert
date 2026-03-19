@@ -1,6 +1,12 @@
+export type FitMode = 'max' | 'crop' | 'scale'
+
 export interface FileSettings {
   targetFormat: string
   quality?: number
+  width?: number
+  height?: number
+  fit?: FitMode
+  keepMetadata?: boolean
 }
 
 export interface ConvertedFile {
@@ -10,10 +16,15 @@ export interface ConvertedFile {
   engineId: string
   inputSize: number
   blob: Blob
+  customized: boolean
 }
 
 export interface ConversionOptions {
   quality: number
+  width?: number
+  height?: number
+  fit?: FitMode
+  keepMetadata?: boolean
 }
 
 export interface FileSliceState {

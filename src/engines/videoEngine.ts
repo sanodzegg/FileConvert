@@ -14,10 +14,14 @@ export const videoEngine: ConversionEngine = {
   supportedInputExtensions: ['mp4', 'mov', 'avi', 'mkv', 'webm'],
   outputFormats: ['mp4', 'webm', 'gif'],
 
-  async convert(file: File, targetFormat: string, _options: ConversionOptions): Promise<Blob> {
+  async convert(file: File, targetFormat: string, options: ConversionOptions): Promise<Blob> {
     const sourceExt = getExtension(file)
     const buffer = await file.arrayBuffer()
-    const result = await window.electron.convertVideo(buffer, sourceExt, targetFormat)
+    const result = await window.electron.convertVideo(buffer, sourceExt, targetFormat, {
+      width: options.width,
+      height: options.height,
+      fit: options.fit,
+    })
     return new Blob([result.buffer as ArrayBuffer], { type: MIME[targetFormat] })
   },
 }

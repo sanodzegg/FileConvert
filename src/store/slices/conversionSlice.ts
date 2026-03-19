@@ -47,10 +47,17 @@ export const createConversionSlice: StateCreator<
     const sourceFormat = getExtension(file)
     const engineId = getEngineForFile(file)?.id ?? 'unknown'
     const name = file.name.replace(/\.[^.]+$/, `.${format}`)
+    const customized = !!(
+      settings?.quality !== undefined ||
+      settings?.width ||
+      settings?.height ||
+      settings?.fit ||
+      settings?.keepMetadata !== undefined
+    )
     set((state) => ({
       convertedFiles: {
         ...state.convertedFiles,
-        [fileKey(file)]: { name, format, sourceFormat, engineId, inputSize: file.size, blob },
+        [fileKey(file)]: { name, format, sourceFormat, engineId, inputSize: file.size, blob, customized },
       },
       convertedCount: state.convertedCount + 1,
       totalOutputSize: state.totalOutputSize + blob.size,

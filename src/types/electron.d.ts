@@ -3,5 +3,6 @@ declare interface Window {
     convert: (buffer: ArrayBuffer, targetFormat: string, quality?: number) => Promise<Uint8Array>
     convertDocument: (buffer: ArrayBuffer, targetFormat: string, sourceFormat: string) => Promise<Uint8Array>
     convertVideo: (buffer: ArrayBuffer, sourceExt: string, targetFormat: string) => Promise<Uint8Array>
+    convertFavicon: (buffer: ArrayBuffer) => Promise<{ ico: ArrayBuffer; pngs: { size: number; buf: ArrayBuffer }[] }>
   }
 }

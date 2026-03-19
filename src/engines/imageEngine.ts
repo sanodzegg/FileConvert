@@ -12,7 +12,12 @@ export const imageEngine: ConversionEngine = {
 
   async convert(file: File, targetFormat: string, options: ConversionOptions): Promise<Blob> {
     const buffer = await file.arrayBuffer()
-    const result = await window.electron.convert(buffer, targetFormat, options.quality)
+    const result = await window.electron.convert(buffer, targetFormat, options.quality, {
+      width: options.width,
+      height: options.height,
+      fit: options.fit,
+      keepMetadata: options.keepMetadata,
+    })
     return new Blob([result.buffer as ArrayBuffer], { type: `image/${targetFormat}` })
   },
 }

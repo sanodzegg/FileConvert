@@ -11,6 +11,7 @@ import { useConvertStore } from "@/store/useConvertStore"
 import { fileKey, getExtension, formatBytes } from "@/utils/fileUtils"
 import { getFormatsForFile } from "@/engines/engineRegistry"
 import { Button } from "../ui/button"
+import FileSettingsDialog from "./file-settings-dialog"
 
 export default function File({ data }: { data: File }) {
     const ext = getExtension(data)
@@ -30,7 +31,7 @@ export default function File({ data }: { data: File }) {
     const removeFile = useConvertStore(s => s.removeFile)
 
     if (isDone) return null;
-    
+
     return (
         <div className={`flex items-center justify-start p-4 rounded-2xl border bg-secondary/30 ${failedError ? 'border-destructive/40 bg-destructive/5' : 'border-accent'}`}>
             <Badge variant={'secondary'} className="shrink-0 uppercase h-10 w-10 rounded-sm mr-2" style={colorStyle}>
@@ -58,6 +59,7 @@ export default function File({ data }: { data: File }) {
                             </ComboboxList>
                         </ComboboxContent>
                     </Combobox>
+                    <FileSettingsDialog file={data} />
                     {failedError && (
                         <Button variant="destructive" size="icon" onClick={() => removeFile(data)}>
                             <X className="size-4" />

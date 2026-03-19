@@ -93,8 +93,16 @@ export default function ConvertedFiles() {
                 <ul className="space-y-2.5">
                     {snapshot.map((f) => (
                         <li key={f.name} className="flex items-center justify-between p-4 rounded-2xl border border-accent bg-secondary/30">
-                            <span className="text-sm text-accent-foreground font-body">{f.name}</span>
-                            <Button variant={'secondary'} onClick={() => handleDownload(f.blob, f.name)} className="text-xs text-primary">
+                            <div className="flex items-center gap-2 min-w-0">
+                                <span className="text-sm text-accent-foreground font-body truncate">{f.name}</span>
+                                {f.customized && (
+                                    <span className="shrink-0 text-xs font-medium px-1.5 py-0.5 rounded-md bg-yellow-400/20 text-yellow-600 dark:text-yellow-400 border border-yellow-400/30">
+                                        Modified
+                                    </span>
+                                )}
+                            </div>
+                            <Button variant="secondary" onClick={() => handleDownload(f.blob, f.name)} className="text-xs text-primary ml-2 shrink-0">
+                                <Download className="size-3.5 mr-1" />
                                 Download
                             </Button>
                         </li>

@@ -57,9 +57,57 @@ async function textToDocx(text) {
   return Packer.toBuffer(doc)
 }
 
+const FAVICON_SIZES = [16, 32, 48, 128, 256, 512]
+
+// Encode multiple PNG buffers into a single .ico file
+function encodeIco(pngBuffers) {
+  const HEADER_SIZE = 6
+  const DIR_ENTRY_SIZE = 16
+  const numImages = pngBuffers.length
+  let offset = HEADER_SIZE + DIR_ENTRY_SIZE * numImages
+
+  const header = Buffer.alloc(HEADER_SIZE)
+  header.writeUInt16LE(0, 0)        // reserved
+  header.writeUInt16LE(1, 2)        // type: 1 = ICO
+  header.writeUInt16LE(numImages, 4)
+
+  const dirEntries = []
+  for (let i = 0; i < numImages; i++) {
+    const size = FAVICON_SIZES[i]
+    const png = pngBuffers[i]
+    const entry = Buffer.alloc(DIR_ENTRY_SIZE)
+    entry.writeUInt8(size >= 256 ? 0 : size, 0)   // width (0 = 256)
+    entry.writeUInt8(size >= 256 ? 0 : size, 1)   // height
+    entry.writeUInt8(0, 2)   // color count
+    entry.writeUInt8(0, 3)   // reserved
+    entry.writeUInt16LE(1, 4)   // color planes
+    entry.writeUInt16LE(32, 6)  // bits per pixel
+    entry.writeUInt32LE(png.length, 8)
+    entry.writeUInt32LE(offset, 12)
+    offset += png.length
+    dirEntries.push(entry)
+  }
+
+  return Buffer.concat([header, ...dirEntries, ...pngBuffers])
+}
+
 function registerConvertHandlers() {
-  ipcMain.handle('convert-file', async (_event, buffer, targetFormat, quality = 60) => {
-    const result = await sharp(Buffer.from(buffer)).toFormat(targetFormat, { quality }).toBuffer()
+  ipcMain.handle('convert-file', async (_event, buffer, targetFormat, quality = 60, imageOptions = {}) => {
+    const { width, height, fit, keepMetadata = true } = imageOptions
+    let pipeline = sharp(Buffer.from(buffer))
+
+    if (keepMetadata) pipeline = pipeline.keepMetadata()
+
+    if (width || height) {
+      const fitMap = { max: 'inside', crop: 'cover', scale: 'fill' }
+      pipeline = pipeline.resize({
+        width: width || undefined,
+        height: height || undefined,
+        fit: fitMap[fit] || 'inside',
+      })
+    }
+
+    const result = await pipeline.toFormat(targetFormat, { quality }).toBuffer()
     return result
   })
 
@@ -74,7 +122,19 @@ function registerConvertHandlers() {
     throw new Error(`Unsupported target format: ${targetFormat}`)
   })
 
-  ipcMain.handle('convert-video', async (_event, buffer, sourceExt, targetFormat) => {
+  ipcMain.handle('convert-favicon', async (_event, buffer) => {
+    const src = Buffer.from(buffer)
+    const pngBuffers = await Promise.all(
+      FAVICON_SIZES.map(size =>
+        sharp(src).resize(size, size, { fit: 'cover' }).png().toBuffer()
+      )
+    )
+    const ico = encodeIco(pngBuffers)
+    return { ico, pngs: pngBuffers.map((buf, i) => ({ size: FAVICON_SIZES[i], buf })) }
+  })
+
+  ipcMain.handle('convert-video', async (_event, buffer, sourceExt, targetFormat, videoOptions = {}) => {
+    const { width, height, fit } = videoOptions
     const tmpDir = os.tmpdir()
     const inputPath = path.join(tmpDir, `${randomUUID()}.${sourceExt}`)
     const outputPath = path.join(tmpDir, `${randomUUID()}.${targetFormat}`)
@@ -85,11 +145,22 @@ function registerConvertHandlers() {
       await new Promise((resolve, reject) => {
         const cmd = ffmpeg(inputPath).setFfmpegPath(ffmpegStaticPath)
 
+        if (width || height) {
+          const w = width || -2
+          const h = height || -2
+          // -2 = scale to preserve aspect ratio and keep divisible by 2
+          const scaleFilter = fit === 'crop'
+            ? `scale=${w}:${h}:force_original_aspect_ratio=increase,crop=${w === -2 ? 'iw' : w}:${h === -2 ? 'ih' : h}`
+            : fit === 'scale'
+              ? `scale=${w}:${h}`
+              : `scale=${w}:${h}:force_original_aspect_ratio=decrease`
+          cmd.videoFilter(scaleFilter)
+        }
+
         if (targetFormat === 'gif') {
-          cmd
-            .fps(15)
-            .size('640x?')
-            .output(outputPath)
+          cmd.fps(15)
+          if (!width && !height) cmd.size('640x?')
+          cmd.output(outputPath)
         } else {
           cmd.output(outputPath)
         }
