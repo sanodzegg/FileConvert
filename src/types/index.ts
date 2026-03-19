@@ -6,6 +6,9 @@ export interface FileSettings {
 export interface ConvertedFile {
   name: string
   format: string
+  sourceFormat: string
+  engineId: string
+  inputSize: number
   blob: Blob
 }
 

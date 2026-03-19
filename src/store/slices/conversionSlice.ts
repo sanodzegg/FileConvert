@@ -6,6 +6,7 @@ import type {
   SettingsSliceState,
 } from '@/types'
 import { fileKey, getExtension } from '@/utils/fileUtils'
+import { getEngineForFile } from '@/engines/engineRegistry'
 
 type FullStore = FileSliceState & ConversionSliceState & ConversionSliceActions & SettingsSliceState
 
@@ -43,11 +44,13 @@ export const createConversionSlice: StateCreator<
   setConvertedFile: (file, blob) => {
     const settings = get().fileSettings[fileKey(file)]
     const format = settings?.targetFormat ?? getExtension(file)
+    const sourceFormat = getExtension(file)
+    const engineId = getEngineForFile(file)?.id ?? 'unknown'
     const name = file.name.replace(/\.[^.]+$/, `.${format}`)
     set((state) => ({
       convertedFiles: {
         ...state.convertedFiles,
-        [fileKey(file)]: { name, format, blob },
+        [fileKey(file)]: { name, format, sourceFormat, engineId, inputSize: file.size, blob },
       },
       convertedCount: state.convertedCount + 1,
       totalOutputSize: state.totalOutputSize + blob.size,

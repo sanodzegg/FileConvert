@@ -24,7 +24,7 @@ export function getFormatsForFile(file: File): string[] {
   const engine = getEngineForFile(file)
   if (!engine) return []
   const ext = getExtension(file)
-  return engine.outputFormats.filter(f => f !== ext)
+  return engine.outputFormats
 }
 
 export function getAllSupportedExtensions(): string[] {

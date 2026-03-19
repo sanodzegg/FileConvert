@@ -6,7 +6,7 @@ import type {
   SettingsSliceState,
   FileSettings,
 } from '@/types'
-import { fileKey, getExtension } from '@/utils/fileUtils'
+import { fileKey } from '@/utils/fileUtils'
 import { getEngineForFile, getFormatsForFile } from '@/engines/engineRegistry'
 
 type FullStore = FileSliceState & FileSliceActions & ConversionSliceState & SettingsSliceState
@@ -41,11 +41,10 @@ export const createFileSlice: StateCreator<
 
       const newSettings: Record<string, FileSettings> = {}
       newFiles.forEach((f) => {
-        const ext = getExtension(f)
         const preferred = getDefaultForFile(f, state)
         const formats = getFormatsForFile(f)
         const targetFormat =
-          preferred !== ext && formats.includes(preferred) ? preferred : (formats[0] ?? '')
+          formats.includes(preferred) ? preferred : (formats[0] ?? '')
         newSettings[fileKey(f)] = { targetFormat }
       })
 

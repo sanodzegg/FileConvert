@@ -3,13 +3,44 @@ import LogoLight from "@/assets/logo-bw.svg";
 import { ThemeToggle } from "../theme/theme-toggle";
 import { Button } from "../ui/button";
 import { NavLink } from "react-router-dom";
+import {
+    NavigationMenu,
+    NavigationMenuContent,
+    NavigationMenuItem,
+    NavigationMenuLink,
+    NavigationMenuList,
+    NavigationMenuTrigger,
+    navigationMenuTriggerStyle,
+} from "../ui/navigation-menu";
+import { cn } from "@/lib/utils";
+import { ChevronDown } from "lucide-react";
+
+const links = [
+    { path: '/', label: 'Convert' },
+    { path: '/settings', label: 'Settings' },
+]
+
+const extensions: { title: string; href: string; }[] = [
+    {
+        title: 'Favicon',
+        href: '/extensions/favicon'
+    },
+]
+
+function ExtensionListItem({
+    title,
+    href,
+}: { title: string; href: string }) {
+    return (
+        <li>
+            <NavigationMenuLink className={'p-1 px-2'} render={<NavLink to={href} />}>
+                <span className="text-sm font-normal">{title}</span>
+            </NavigationMenuLink>
+        </li>
+    )
+}
 
 export default function Navigation() {
-    const links = [
-        { path: '/', label: 'Convert', disabled: false },
-        { path: '/settings', label: 'Settings', disabled: false },
-        { path: '/history', label: 'History', disabled: true }
-    ]
     return (
         <section className="border-b border-b-gray-200 dark:border-b-gray-50/10">
             <div className="flex items-center justify-between py-2.5 max-w-5xl mx-auto px-10">
@@ -18,27 +49,57 @@ export default function Navigation() {
                     <img src={LogoDark} alt="toWEBP logo" className="h-13 w-13 hidden dark:block" />
                     <h1 className="text-2xl text-black dark:text-white">FileConvert</h1>
                 </div>
+
                 <nav className="w-full flex justify-end mr-10">
-                    <ul className="flex items-center gap-x-4">
-                        {links.map((link, index) => (
-                            <li key={index}>
-                                {link.disabled ? (
-                                    <Button disabled variant="outline" className="font-normal dark:border-secondary">
-                                        {link.label}
-                                    </Button>
-                                ) : (
+                    <NavigationMenu>
+                        <NavigationMenuList className="gap-x-4">
+                            {links.map((link) => (
+                                <NavigationMenuItem key={link.path}>
                                     <NavLink to={link.path}>
                                         {({ isActive }) => (
-                                            <Button variant={isActive ? 'default' : 'outline'} className="font-normal dark:border-secondary">
-                                                {link.label}
-                                            </Button>
+                                            <NavigationMenuLink
+                                                render={<span />}
+                                                active={isActive}
+                                                className={cn(navigationMenuTriggerStyle(), "p-0 bg-transparent hover:bg-transparent focus:bg-transparent data-active:bg-transparent")}
+                                            >
+                                                <Button variant={isActive ? 'default' : 'outline'} className="font-normal dark:border-secondary pointer-events-none">
+                                                    {link.label}
+                                                </Button>
+                                            </NavigationMenuLink>
                                         )}
                                     </NavLink>
-                                )}
-                            </li>
-                        ))}
-                    </ul>
+                                </NavigationMenuItem>
+                            ))}
+
+                            <NavigationMenuItem>
+                                <NavigationMenuTrigger className="p-0 bg-transparent hover:bg-transparent data-popup-open:bg-transparent data-open:bg-transparent focus:bg-transparent h-auto [&>svg]:hidden">
+                                    <Button variant="outline" className="font-normal dark:border-secondary pointer-events-none gap-1">
+                                        Extensions
+                                        <ChevronDown className="size-3 transition-transform duration-300 group-data-popup-open/navigation-menu-trigger:rotate-180 group-data-open/navigation-menu-trigger:rotate-180" />
+                                    </Button>
+                                </NavigationMenuTrigger>
+                                <NavigationMenuContent className={'p-1!'}>
+                                    <ul className="flex flex-col w-25">
+                                        {extensions.map((ext) => (
+                                            <ExtensionListItem key={ext.href} title={ext.title} href={ext.href} />
+                                        ))}
+                                    </ul>
+                                </NavigationMenuContent>
+                            </NavigationMenuItem>
+
+                            <NavigationMenuItem className={'pointer-events-none'} aria-disabled>
+                                <NavLink to="/history">
+                                    {() => (
+                                        <Button disabled variant="outline" className="font-normal dark:border-secondary">
+                                            History
+                                        </Button>
+                                    )}
+                                </NavLink>
+                            </NavigationMenuItem>
+                        </NavigationMenuList>
+                    </NavigationMenu>
                 </nav>
+
                 <ThemeToggle />
             </div>
         </section>

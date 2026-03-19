@@ -1,11 +1,11 @@
 import { useConvertStore } from "@/store/useConvertStore"
 import { useEffect, useState } from "react"
 import type { ConvertedFile } from "@/types"
-import { formatBytes } from "@/utils/fileUtils"
 import { Button } from "../ui/button"
 import { Download, RefreshCcw } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip"
 import JSZip from "jszip"
+import ConversionStats from "./conversion-stats"
 
 export default function ConvertedFiles() {
     const convertedFiles = useConvertStore(s => s.convertedFiles)
@@ -29,7 +29,17 @@ export default function ConvertedFiles() {
     const doneCount = convertedCount + failedEntries.length
     const isDone = convertingTotal > 0 && doneCount >= convertingTotal
     const progress = convertingTotal > 0 ? (doneCount / convertingTotal) * 100 : 0
-    const savedPercent = totalInputSize > 0 ? Math.round((1 - totalOutputSize / totalInputSize) * 100) : 0
+    const quality = useConvertStore(s => s.quality)
+    const imageFiles = snapshot.filter(f => f.engineId === 'image')
+    const imageInputSize = imageFiles.reduce((acc, f) => acc + f.inputSize, 0)
+    const imageOutputSize = imageFiles.reduce((acc, f) => acc + f.blob.size, 0)
+    const savedPercent = isDone && imageFiles.length > 0 && imageInputSize > 0
+        ? Math.round((1 - imageOutputSize / imageInputSize) * 100)
+        : null
+    const hasSuspiciousSavings = savedPercent !== null && (
+        (quality >= 70 && imageFiles.some(f => f.sourceFormat === f.format)) ||
+        (quality >= 80 && savedPercent > 50)
+    )
 
     if (convertingTotal === 0) return null
 
@@ -92,37 +102,17 @@ export default function ConvertedFiles() {
                 </ul>
             )}
 
-            <div className="mt-6 p-4 rounded-2xl border border-accent bg-secondary/30 space-y-3">
-                <div className="flex items-center justify-between text-sm">
-                    <span className="text-accent-foreground/70 truncate max-w-xs">
-                        {isDone ? 'Done' : `Converting ${currentFileName}`}
-                    </span>
-                    <span className="text-accent-foreground font-medium ml-4 shrink-0">{Math.round(progress)}%</span>
-                </div>
-                <div className="h-2 w-full rounded-full bg-accent overflow-hidden">
-                    <div
-                        className="h-full rounded-full transition-all duration-300"
-                        style={{ width: `${progress}%`, background: 'linear-gradient(to right, #7c3aed, #a855f7)' }}
-                    />
-                </div>
-                <div className="grid grid-cols-3 gap-3 pt-1">
-                    <div className="rounded-xl border border-accent bg-background p-3">
-                        <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Converted</p>
-                        <p className="text-2xl font-bold text-foreground">{convertedCount}</p>
-                        <p className="text-xs text-muted-foreground">of {convertingTotal} files</p>
-                    </div>
-                    <div className="rounded-xl border border-accent bg-background p-3">
-                        <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Saved</p>
-                        <p className="text-2xl font-bold text-foreground">{savedPercent > 0 ? `${savedPercent}%` : '—'}</p>
-                        <p className="text-xs text-muted-foreground">file size reduction</p>
-                    </div>
-                    <div className="rounded-xl border border-accent bg-background p-3">
-                        <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Output</p>
-                        <p className="text-2xl font-bold text-foreground">{totalOutputSize > 0 ? formatBytes(totalOutputSize) : '—'}</p>
-                        <p className="text-xs text-muted-foreground">from {formatBytes(totalInputSize)}</p>
-                    </div>
-                </div>
-            </div>
+            <ConversionStats
+                isDone={isDone}
+                currentFileName={currentFileName}
+                progress={progress}
+                convertedCount={convertedCount}
+                convertingTotal={convertingTotal}
+                savedPercent={savedPercent}
+                hasSuspiciousSavings={hasSuspiciousSavings}
+                totalOutputSize={totalOutputSize}
+                totalInputSize={totalInputSize}
+            />
         </section>
     )
 }
