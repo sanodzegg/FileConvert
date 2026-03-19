@@ -7,6 +7,12 @@ import { HashRouter as BrowserRouter } from 'react-router-dom'
 import { ThemeProvider } from '@/components/theme/theme-provider'
 import Navigation from './components/navigation/navigation'
 
+const splash = document.getElementById('splash')
+if (splash) {
+  splash.style.opacity = '0'
+  setTimeout(() => splash.remove(), 300)
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>

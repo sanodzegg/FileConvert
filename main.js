@@ -14,7 +14,8 @@ function createWindow() {
       contextIsolation: true,
       preload: path.join(__dirname, 'electron/preload.js'),
     },
-    resizable: false
+    resizable: false,
+    backgroundColor: '#09090b',
   })
 
   if (isDev) {
