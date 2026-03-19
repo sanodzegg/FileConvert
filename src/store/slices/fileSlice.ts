@@ -11,6 +11,15 @@ import { getEngineForFile, getFormatsForFile } from '@/engines/engineRegistry'
 
 type FullStore = FileSliceState & FileSliceActions & ConversionSliceState & SettingsSliceState
 
+function getDefaultForFile(file: File, state: SettingsSliceState): string {
+  const engine = getEngineForFile(file)
+  if (!engine) return ''
+  if (engine.id === 'image') return state.defaultImageFormat
+  if (engine.id === 'document') return state.defaultDocumentFormat
+  if (engine.id === 'video') return state.defaultVideoFormat
+  return ''
+}
+
 export const createFileSlice: StateCreator<
   FullStore,
   [],
@@ -33,7 +42,7 @@ export const createFileSlice: StateCreator<
       const newSettings: Record<string, FileSettings> = {}
       newFiles.forEach((f) => {
         const ext = getExtension(f)
-        const preferred = state.defaultOutputFormat
+        const preferred = getDefaultForFile(f, state)
         const formats = getFormatsForFile(f)
         const targetFormat =
           preferred !== ext && formats.includes(preferred) ? preferred : (formats[0] ?? '')

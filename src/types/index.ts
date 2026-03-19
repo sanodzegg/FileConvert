@@ -45,10 +45,14 @@ export interface ConversionSliceActions {
 
 export interface SettingsSliceState {
   quality: number
-  defaultOutputFormat: string
+  defaultImageFormat: string
+  defaultDocumentFormat: string
+  defaultVideoFormat: string
 }
 
 export interface SettingsSliceActions {
   setQuality: (quality: number) => void
-  setDefaultOutputFormat: (format: string) => void
+  setDefaultImageFormat: (format: string) => void
+  setDefaultDocumentFormat: (format: string) => void
+  setDefaultVideoFormat: (format: string) => void
 }

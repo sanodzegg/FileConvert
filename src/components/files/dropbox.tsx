@@ -32,7 +32,7 @@ export default function Dropbox() {
     return (
         <form>
             <input ref={inputRef} multiple onChange={handleInputChange} className="sr-only" type="file" name="userFiles" id="userFiles" />
-            <div ref={wrapperRef} onDrop={handleDrop} onDragOver={preventDragOver} onDragEnter={handleDragEnter} onDragEnd={handleDragEnd} className="flex flex-col items-center justify-center py-10 w-full h-100 border border-border hover:border-primary rounded-3xl border-dashed transition-colors cursor-pointer gap-4 [&.dragenter]:bg-accent">
+            <div ref={wrapperRef} onDrop={handleDrop} onDragOver={preventDragOver} onDragEnter={handleDragEnter} onDragEnd={handleDragEnd} className="flex flex-col items-center justify-center py-10 w-full h-90 border border-border hover:border-primary rounded-3xl border-dashed transition-colors cursor-pointer gap-4 [&.dragenter]:bg-accent">
                 <Button onClick={handleClickRedirection} variant="outline" className="w-20 h-20 border-border hover:border-primary transition-colors">
                     <Import className="size-10 stroke-primary" />
                 </Button>
@@ -42,7 +42,7 @@ export default function Dropbox() {
                     <p className="text-sm text-muted-foreground mt-1">or browse from your computer</p>
                 </div>
 
-                <div className="flex items-center justify-center flex-wrap max-w-83 gap-2 mb-4">
+                <div className="flex items-center justify-center flex-wrap max-w-140 gap-2 mb-4">
                     {formats.map((format, index) => (
                         <Badge variant={'secondary'} key={index} className={'rounded-sm p-3 text-sm font-light text-primary'}>{format}</Badge>
                     ))}

@@ -22,7 +22,11 @@ export const createSettingsSlice: StateCreator<
   SettingsSliceState & SettingsSliceActions
 > = (set) => ({
   quality: 60,
-  defaultOutputFormat: 'webp',
+  defaultImageFormat: 'webp',
+  defaultDocumentFormat: 'pdf',
+  defaultVideoFormat: 'mp4',
   setQuality: (quality) => set({ quality }),
-  setDefaultOutputFormat: (defaultOutputFormat) => set({ defaultOutputFormat }),
+  setDefaultImageFormat: (defaultImageFormat) => set({ defaultImageFormat }),
+  setDefaultDocumentFormat: (defaultDocumentFormat) => set({ defaultDocumentFormat }),
+  setDefaultVideoFormat: (defaultVideoFormat) => set({ defaultVideoFormat }),
 })

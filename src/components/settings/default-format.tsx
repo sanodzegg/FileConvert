@@ -1,5 +1,7 @@
 import { useConvertStore } from '@/store/useConvertStore'
-import { allImageFormats } from '@/engines/engineRegistry'
+import { imageEngine } from '@/engines/imageEngine'
+import { documentEngine } from '@/engines/documentEngine'
+import { videoEngine } from '@/engines/videoEngine'
 import {
     Combobox,
     ComboboxInput,
@@ -8,31 +10,74 @@ import {
     ComboboxItem,
 } from '@/components/ui/combobox'
 
+interface FormatPickerProps {
+    label: string
+    description: string
+    value: string
+    formats: string[]
+    onChange: (v: string) => void
+}
+
+function FormatPicker({ label, description, value, formats, onChange }: FormatPickerProps) {
+    return (
+        <div className="flex items-center justify-between">
+            <div>
+                <p className="text-sm font-medium text-primary">{label}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
+            </div>
+            <Combobox value={value} onValueChange={(v) => v && onChange(v)} items={formats} filter={null}>
+                <ComboboxInput className={'w-28! h-9! [&_input]:uppercase! [&_input]:select-none!'} readOnly />
+                <ComboboxContent>
+                    <ComboboxList>
+                        {(item) => (
+                            <ComboboxItem className={'uppercase'} key={item} value={item}>
+                                {item}
+                            </ComboboxItem>
+                        )}
+                    </ComboboxList>
+                </ComboboxContent>
+            </Combobox>
+        </div>
+    )
+}
+
 export default function DefaultFormat() {
-    const defaultOutputFormat = useConvertStore(s => s.defaultOutputFormat)
-    const setDefaultOutputFormat = useConvertStore(s => s.setDefaultOutputFormat)
+    const defaultImageFormat = useConvertStore(s => s.defaultImageFormat)
+    const defaultDocumentFormat = useConvertStore(s => s.defaultDocumentFormat)
+    const defaultVideoFormat = useConvertStore(s => s.defaultVideoFormat)
+    const setDefaultImageFormat = useConvertStore(s => s.setDefaultImageFormat)
+    const setDefaultDocumentFormat = useConvertStore(s => s.setDefaultDocumentFormat)
+    const setDefaultVideoFormat = useConvertStore(s => s.setDefaultVideoFormat)
 
     return (
-        <div className="p-5 rounded-2xl border border-accent bg-secondary/30 space-y-4">
+        <div className="p-5 rounded-2xl border border-accent bg-secondary/30 space-y-5">
             <div>
                 <p className="text-sm font-medium text-primary">Default Output Format</p>
                 <p className="text-xs text-muted-foreground mt-0.5">Format applied to newly added files.</p>
             </div>
-            <Combobox
-                value={defaultOutputFormat}
-                onValueChange={(v) => v && setDefaultOutputFormat(v as string)}
-            >
-                <ComboboxInput placeholder="Select format" className="w-40! h-10! [&_input]:uppercase! [&_input]:select-none! m-0!" />
-                <ComboboxContent>
-                    <ComboboxList>
-                        {allImageFormats.map(fmt => (
-                            <ComboboxItem key={fmt} value={fmt}>
-                                {fmt.toUpperCase()}
-                            </ComboboxItem>
-                        ))}
-                    </ComboboxList>
-                </ComboboxContent>
-            </Combobox>
+            <div className="space-y-4">
+                <FormatPicker
+                    label="Images"
+                    description="JPG, PNG, WEBP, AVIF..."
+                    value={defaultImageFormat}
+                    formats={imageEngine.outputFormats}
+                    onChange={setDefaultImageFormat}
+                />
+                <FormatPicker
+                    label="Documents"
+                    description="PDF, DOCX, TXT..."
+                    value={defaultDocumentFormat}
+                    formats={documentEngine.outputFormats}
+                    onChange={setDefaultDocumentFormat}
+                />
+                <FormatPicker
+                    label="Videos"
+                    description="MP4, MOV, AVI, MKV..."
+                    value={defaultVideoFormat}
+                    formats={videoEngine.outputFormats}
+                    onChange={setDefaultVideoFormat}
+                />
+            </div>
         </div>
     )
 }

@@ -30,7 +30,9 @@ export const useConvertStore = create<ConvertStore>()(
       name: 'convert-store',
       partialize: (state) => ({
         quality: state.quality,
-        defaultOutputFormat: state.defaultOutputFormat,
+        defaultImageFormat: state.defaultImageFormat,
+        defaultDocumentFormat: state.defaultDocumentFormat,
+        defaultVideoFormat: state.defaultVideoFormat,
       }),
     }
   )

@@ -33,4 +33,3 @@ export function getAllSupportedExtensions(): string[] {
 
 
 export { imageEngine }
-export const allImageFormats = imageEngine.outputFormats
