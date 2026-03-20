@@ -46,6 +46,8 @@ export default function CropEditor({ file, onReset }: Props) {
   const [drawTool, setDrawTool] = useState<DrawTool>('pen')
   const [drawColor, setDrawColor] = useState('#ffffff')
   const [drawWidth, setDrawWidth] = useState(3)
+  const [bgRemoveStatus, setBgRemoveStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
+  const [bgRemoveProgress, setBgRemoveProgress] = useState(0)
 
   // Refs for read-in-callback access
   const adjustmentsRef = useRef(adjustments)
@@ -381,6 +383,37 @@ export default function CropEditor({ file, onReset }: Props) {
     return map[handle ?? ''] ?? 'default'
   }
 
+  // ─── BG Remove ───────────────────────────────────────────────────────────
+
+  const handleBgRemove = async () => {
+    const img = imgRef.current
+    if (!img) return
+    setBgRemoveStatus('loading')
+    setBgRemoveProgress(0)
+    try {
+      const { removeBackground } = await import('@imgly/background-removal')
+      // Fetch the current image as a blob
+      const res = await fetch(img.src)
+      const inputBlob = await res.blob()
+      const resultBlob = await removeBackground(inputBlob, {
+        progress: (_key: string, current: number, total: number) => {
+          setBgRemoveProgress(total > 0 ? Math.round((current / total) * 100) : 0)
+        },
+      })
+      const url = URL.createObjectURL(resultBlob)
+      const newImg = new Image()
+      newImg.onload = () => {
+        imgRef.current = newImg
+        initCanvas(newImg)
+        setBgRemoveStatus('done')
+        setBgRemoveProgress(100)
+      }
+      newImg.src = url
+    } catch {
+      setBgRemoveStatus('error')
+    }
+  }
+
   // ─── Export ───────────────────────────────────────────────────────────────
 
   const handleExport = (format: 'png' | 'jpeg' | 'webp', quality: number) => {
@@ -475,7 +508,13 @@ export default function CropEditor({ file, onReset }: Props) {
         </div>
 
         {imgLoaded && (
-          <BottomPanel adjustments={adjustments} onAdjustments={setAdjustments} />
+          <BottomPanel
+            adjustments={adjustments}
+            onAdjustments={setAdjustments}
+            bgRemoveStatus={bgRemoveStatus}
+            bgRemoveProgress={bgRemoveProgress}
+            onBgRemove={handleBgRemove}
+          />
         )}
 
         <div className="flex items-center justify-between">
