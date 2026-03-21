@@ -1,7 +1,7 @@
 import type { ConversionEngine } from './ConversionEngine'
 import type { ConversionOptions } from '@/types'
 
-export const IMAGE_INPUT_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'avif', 'gif', 'tiff']
+export const IMAGE_INPUT_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'avif', 'gif', 'tiff', 'svg']
 export const IMAGE_OUTPUT_FORMATS = ['webp', 'png', 'jpg', 'avif', 'gif', 'tiff']
 
 export const imageEngine: ConversionEngine = {

@@ -7,7 +7,7 @@ const sharpPath = app.isPackaged
   : 'sharp'
 const sharp = require(sharpPath)
 
-const IMAGE_EXTS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.tiff', '.tif', '.avif', '.bmp'])
+const IMAGE_EXTS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.tiff', '.tif', '.avif', '.bmp', '.svg'])
 
 function isImage(filePath) {
   return IMAGE_EXTS.has(path.extname(filePath).toLowerCase())
@@ -28,7 +28,7 @@ function collectImages(dir) {
   return results
 }
 
-async function convertFile(srcPath, targetFormat, quality, outputMode, deleteOriginal) {
+async function convertFile(srcPath, targetFormat, quality, outputMode, deleteOriginal, allowOverwrite = false) {
   const ext = '.' + targetFormat
   const dir = path.dirname(srcPath)
   const base = path.basename(srcPath, path.extname(srcPath))
@@ -39,7 +39,6 @@ async function convertFile(srcPath, targetFormat, quality, outputMode, deleteOri
     fs.mkdirSync(outDir, { recursive: true })
     destPath = path.join(outDir, base + ext)
   } else {
-    // alongside — same folder, new extension
     destPath = path.join(dir, base + ext)
   }
 
@@ -48,10 +47,16 @@ async function convertFile(srcPath, targetFormat, quality, outputMode, deleteOri
     throw new Error(`Source is already a .${targetFormat} — skipped`)
   }
 
+  // Skip if output already exists — another source file with the same base name was already converted there
+  if (!allowOverwrite && fs.existsSync(destPath)) {
+    throw new Error(`Output ${base}${ext} already exists — rename conflicting source files first`)
+  }
+
   const srcStat = fs.statSync(srcPath)
   const originalSize = srcStat.size
 
-  await sharp(srcPath)
+  const isSvg = path.extname(srcPath).toLowerCase() === '.svg'
+  await sharp(srcPath, isSvg ? { density: 300 } : {})
     .toFormat(targetFormat, { quality })
     .toFile(destPath)
 
@@ -155,7 +160,7 @@ function registerBulkConvertHandlers(mainWindow) {
       await new Promise(r => setTimeout(r, 500))
 
       try {
-        const result = await convertFile(fullPath, targetFormat, quality, outputMode, deleteOriginal)
+        const result = await convertFile(fullPath, targetFormat, quality, outputMode, deleteOriginal, true)
         mainWindow.webContents.send('bulk-watch-converted', { ok: true, ...result })
       } catch (err) {
         mainWindow.webContents.send('bulk-watch-converted', { ok: false, srcPath: fullPath, error: err.message })

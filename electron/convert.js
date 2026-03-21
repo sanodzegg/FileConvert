@@ -94,7 +94,10 @@ function encodeIco(pngBuffers) {
 function registerConvertHandlers() {
   ipcMain.handle('convert-file', async (_event, buffer, targetFormat, quality = 60, imageOptions = {}) => {
     const { width, height, fit, keepMetadata = true } = imageOptions
-    let pipeline = sharp(Buffer.from(buffer))
+    const buf = Buffer.from(buffer)
+    // SVG needs density (DPI) set at read time for proper rasterization
+    const isSvg = buf.subarray(0, 100).toString().includes('<svg')
+    let pipeline = isSvg ? sharp(buf, { density: 300 }) : sharp(buf)
 
     if (keepMetadata) pipeline = pipeline.keepMetadata()
 

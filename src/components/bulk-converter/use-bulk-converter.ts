@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react'
-import type { BulkFileResult, BulkConvertOptions } from '../../../vite-env'
 
 export type OutputMode = 'alongside' | 'subfolder'
 

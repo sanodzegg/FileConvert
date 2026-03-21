@@ -1,3 +1,11 @@
+interface BulkConvertOptions {
+  folderPath: string
+  targetFormat: string
+  quality: number
+  outputMode: 'alongside' | 'subfolder'
+  deleteOriginal: boolean
+}
+
 interface BulkFileResult {
   ok: boolean
   srcPath: string
@@ -10,7 +18,7 @@ interface BulkFileResult {
 
 declare interface Window {
   electron: {
-    convert: (buffer: ArrayBuffer, targetFormat: string, quality?: number) => Promise<Uint8Array>
+    convert: (buffer: ArrayBuffer, targetFormat: string, quality?: number, imageOptions?: { width?: number; height?: number; fit?: string; keepMetadata?: boolean }) => Promise<Uint8Array>
     convertDocument: (buffer: ArrayBuffer, targetFormat: string, sourceFormat: string) => Promise<Uint8Array>
     convertVideo: (buffer: ArrayBuffer, sourceExt: string, targetFormat: string) => Promise<Uint8Array>
     convertFavicon: (buffer: ArrayBuffer) => Promise<{ ico: ArrayBuffer; pngs: { size: number; buf: ArrayBuffer }[] }>
