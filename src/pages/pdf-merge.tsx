@@ -208,7 +208,7 @@ export default function PdfMerge() {
             </div>
           ) : (
             <div className="rounded-xl border border-dashed border-border p-6 flex flex-col items-center justify-center gap-3 text-center h-64">
-              <FilePlus className="size-8 text-muted-foreground/40" />
+              <FilePlus className="size-8 text-muted-foreground" />
               <p className="text-sm text-muted-foreground">
                 {files.length === 0
                   ? 'Add at least 2 PDF files to merge'
