@@ -16,13 +16,13 @@ interface PdfFile {
   id: string
   name: string
   size: number
-  buffer: number[]
+  path: string
 }
 
 export default function PdfMerge() {
   const [files, setFiles] = useState<PdfFile[]>([])
   const [status, setStatus] = useState<Status>('idle')
-  const [result, setResult] = useState<number[] | null>(null)
+  const [merged, setMerged] = useState(false)
   const [savedPath, setSavedPath] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [draggingId, setDraggingId] = useState<string | null>(null)
@@ -35,7 +35,7 @@ export default function PdfMerge() {
       id: `${f.name}-${Date.now()}-${Math.random()}`,
       name: f.name,
       size: f.size,
-      buffer: f.buffer,
+      path: f.path,
     }))
     setFiles(prev => [...prev, ...newFiles])
   }
@@ -67,8 +67,8 @@ export default function PdfMerge() {
     setStatus('merging')
     setError(null)
     try {
-      const res = await window.electron.pdfMerge({ buffers: files.map(f => f.buffer) })
-      setResult(res.buffer)
+      await window.electron.pdfMerge({ filePaths: files.map(f => f.path) })
+      setMerged(true)
       setStatus('done')
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : String(err))
@@ -77,14 +77,13 @@ export default function PdfMerge() {
   }
 
   const save = async () => {
-    if (!result) return
-    const res = await window.electron.pdfMergeSave({ buffer: result })
+    const res = await window.electron.pdfMergeSave()
     if (!res.canceled && res.filePath) setSavedPath(res.filePath)
   }
 
   const reset = () => {
     setFiles([])
-    setResult(null)
+    setMerged(false)
     setSavedPath(null)
     setError(null)
     setStatus('idle')
@@ -172,7 +171,7 @@ export default function PdfMerge() {
             )}
           </Button>
 
-          {isDone && result && (
+          {isDone && merged && (
             <Button variant="outline" className="w-full gap-2" size="sm" onClick={save}>
               <Download className="size-3.5" />
               {savedPath ? 'Save again' : 'Download'}
@@ -186,7 +185,7 @@ export default function PdfMerge() {
 
         {/* Right: status */}
         <div className="flex-1 min-w-0">
-          {isDone && result ? (
+          {isDone && merged ? (
             <div className="rounded-xl border border-green-500/30 bg-green-500/10 p-6 flex flex-col items-center justify-center gap-3 text-center h-64">
               <FilePlus className="size-8 text-green-500" />
               <div>
@@ -209,7 +208,7 @@ export default function PdfMerge() {
             </div>
           ) : (
             <div className="rounded-xl border border-dashed border-border p-6 flex flex-col items-center justify-center gap-3 text-center h-64">
-              <FilePlus className="size-8 text-muted-foreground" />
+              <FilePlus className="size-8 text-muted-foreground/40" />
               <p className="text-sm text-muted-foreground">
                 {files.length === 0
                   ? 'Add at least 2 PDF files to merge'

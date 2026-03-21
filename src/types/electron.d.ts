@@ -32,9 +32,9 @@ declare interface Window {
     onBulkWatchConverted: (cb: (data: BulkFileResult) => void) => () => void
 
     // PDF tools
-    pdfMerge: (opts: { buffers: number[][] }) => Promise<{ buffer: number[] }>
-    pdfMergeSave: (opts: { buffer: number[] }) => Promise<{ canceled: boolean; filePath?: string }>
-    pdfPickFiles: () => Promise<{ canceled: boolean; files: { path: string; name: string; size: number; buffer: number[] }[] }>
+    pdfMerge: (opts: { filePaths: string[] }) => Promise<{}>
+    pdfMergeSave: () => Promise<{ canceled: boolean; filePath?: string }>
+    pdfPickFiles: () => Promise<{ canceled: boolean; files: { path: string; name: string; size: number }[] }>
 
     // Website screenshot
     screenshotEnsureBrowser: () => Promise<boolean>

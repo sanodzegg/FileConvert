@@ -3,28 +3,32 @@ const fs = require('fs')
 const path = require('path')
 const { PDFDocument } = require('pdf-lib')
 
+let mergedBuffer = null
+
 function registerPdfToolsHandlers(mainWindow) {
-  ipcMain.handle('pdf-merge', async (_event, { buffers }) => {
+  ipcMain.handle('pdf-merge', async (_event, { filePaths }) => {
     const merged = await PDFDocument.create()
 
-    for (const buf of buffers) {
-      const doc = await PDFDocument.load(Buffer.from(buf))
+    for (const fp of filePaths) {
+      const buf = fs.readFileSync(fp)
+      const doc = await PDFDocument.load(buf)
       const pages = await merged.copyPages(doc, doc.getPageIndices())
       pages.forEach(p => merged.addPage(p))
     }
 
-    const result = await merged.save()
-    return { buffer: Array.from(result) }
+    mergedBuffer = await merged.save()
+    return {}
   })
 
-  ipcMain.handle('pdf-merge-save', async (_event, { buffer }) => {
+  ipcMain.handle('pdf-merge-save', async () => {
+    if (!mergedBuffer) return { canceled: true }
     const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
       title: 'Save merged PDF',
       defaultPath: 'merged.pdf',
       filters: [{ name: 'PDF', extensions: ['pdf'] }],
     })
     if (canceled || !filePath) return { canceled: true }
-    fs.writeFileSync(filePath, Buffer.from(buffer))
+    fs.writeFileSync(filePath, mergedBuffer)
     return { canceled: false, filePath }
   })
 
@@ -39,7 +43,6 @@ function registerPdfToolsHandlers(mainWindow) {
       path: fp,
       name: path.basename(fp),
       size: fs.statSync(fp).size,
-      buffer: Array.from(fs.readFileSync(fp)),
     }))
     return { canceled: false, files }
   })

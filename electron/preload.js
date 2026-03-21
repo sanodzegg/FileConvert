@@ -25,7 +25,7 @@ contextBridge.exposeInMainWorld('electron', {
 
   // PDF tools
   pdfMerge: (opts) => ipcRenderer.invoke('pdf-merge', opts),
-  pdfMergeSave: (opts) => ipcRenderer.invoke('pdf-merge-save', opts),
+  pdfMergeSave: () => ipcRenderer.invoke('pdf-merge-save'),
   pdfPickFiles: () => ipcRenderer.invoke('pdf-pick-files'),
 
   // Website screenshot
