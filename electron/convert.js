@@ -187,6 +187,38 @@ function registerConvertHandlers() {
       fs.rmSync(outputPath, { force: true })
     }
   })
+
+  ipcMain.handle('convert-audio', async (_event, buffer, sourceExt, targetFormat) => {
+    // Map output format aliases to ffmpeg format/container names
+    const fmtMap = { m4a: 'ipod', weba: 'webm', ogg: 'ogg', aiff: 'aiff' }
+    const ffmpegFmt = fmtMap[targetFormat] || targetFormat
+    const outputExt = targetFormat === 'm4a' ? 'm4a' : targetFormat === 'weba' ? 'weba' : targetFormat
+
+    const tmpDir = os.tmpdir()
+    const inputPath = path.join(tmpDir, `${randomUUID()}.${sourceExt}`)
+    const outputPath = path.join(tmpDir, `${randomUUID()}.${outputExt}`)
+
+    fs.writeFileSync(inputPath, Buffer.from(buffer))
+
+    try {
+      await new Promise((resolve, reject) => {
+        ffmpeg(inputPath)
+          .setFfmpegPath(ffmpegStaticPath)
+          .noVideo()
+          .toFormat(ffmpegFmt)
+          .output(outputPath)
+          .on('end', resolve)
+          .on('error', reject)
+          .run()
+      })
+
+      const result = fs.readFileSync(outputPath)
+      return result
+    } finally {
+      fs.rmSync(inputPath, { force: true })
+      fs.rmSync(outputPath, { force: true })
+    }
+  })
 }
 
 module.exports = { registerConvertHandlers }
