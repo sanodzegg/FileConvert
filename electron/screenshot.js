@@ -35,15 +35,15 @@ function registerScreenshotHandlers(mainWindow) {
     return ensureBrowser(mainWindow)
   })
 
-  ipcMain.handle('screenshot-capture', async (_event, { url, format, viewportWidth }) => {
+  ipcMain.handle('screenshot-capture', async (_event, { url, format, viewportWidth, userAgent }) => {
     if (!browserReady) {
       const ok = await ensureBrowser(mainWindow)
       if (!ok) throw new Error('Browser not available')
     }
 
-    const context = await browserInstance.newContext({
-      viewport: { width: viewportWidth, height: 900 },
-    })
+    const contextOpts = { viewport: { width: viewportWidth, height: 900 } }
+    if (userAgent) contextOpts.userAgent = userAgent
+    const context = await browserInstance.newContext(contextOpts)
 
     const page = await context.newPage()
 

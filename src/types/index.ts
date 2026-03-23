@@ -62,6 +62,8 @@ export interface SettingsSliceState {
   defaultImageFormat: string
   defaultDocumentFormat: string
   defaultVideoFormat: string
+  defaultOutputFolder: string | null
+  pendingEditorFile: File | null
 }
 
 export interface SettingsSliceActions {
@@ -69,4 +71,6 @@ export interface SettingsSliceActions {
   setDefaultImageFormat: (format: string) => void
   setDefaultDocumentFormat: (format: string) => void
   setDefaultVideoFormat: (format: string) => void
+  setDefaultOutputFolder: (folder: string | null) => void
+  setPendingEditorFile: (file: File | null) => void
 }

@@ -34,7 +34,6 @@ interface Props {
   drawTool: DrawTool
   drawColor: string
   drawWidth: number
-  canUndo: boolean
   // Callbacks
   onAdjustments: (a: Adjustments) => void
   onTransform: (t: Transform) => void
@@ -46,16 +45,15 @@ interface Props {
   onDrawTool: (t: DrawTool) => void
   onDrawColor: (c: string) => void
   onDrawWidth: (w: number) => void
-  onDrawUndo: () => void
 }
 
 export default function EditorToolbar({
   adjustments, transform, resize, naturalW, naturalH,
   mode, textOverlays, selectedTextId,
-  drawTool, drawColor, drawWidth, canUndo,
+  drawTool, drawColor, drawWidth,
   onAdjustments, onTransform, onResize, onMode,
   onSelectText, onUpdateText, onDeleteText,
-  onDrawTool, onDrawColor, onDrawWidth, onDrawUndo,
+  onDrawTool, onDrawColor, onDrawWidth,
 }: Props) {
   const [activeTab, setActiveTab] = useState<EditorTab>('canvas')
   const [activePreset, setActivePreset] = useState<string | null>(null)
@@ -91,6 +89,8 @@ export default function EditorToolbar({
           <TabAdjust
             adjustments={adjustments}
             onChange={handleAdjustments}
+            onCommit={handleAdjustments}
+            onDragStart={() => {}}
             onReset={() => { onAdjustments(DEFAULT_ADJUSTMENTS); setActivePreset(null) }}
           />
         )}
@@ -108,6 +108,8 @@ export default function EditorToolbar({
             vignette={adjustments.vignette}
             onTransform={onTransform}
             onVignette={v => onAdjustments({ ...adjustments, vignette: v })}
+            onVignetteCommit={v => onAdjustments({ ...adjustments, vignette: v })}
+            onVignetteDragStart={() => {}}
           />
         )}
         {activeTab === 'overlay' && (
@@ -125,8 +127,6 @@ export default function EditorToolbar({
             onDrawTool={onDrawTool}
             onDrawColor={onDrawColor}
             onDrawWidth={onDrawWidth}
-            onDrawUndo={onDrawUndo}
-            canUndo={canUndo}
           />
         )}
         {activeTab === 'canvas' && (

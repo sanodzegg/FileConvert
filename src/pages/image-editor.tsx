@@ -1,9 +1,19 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import EditorDropzone from "@/components/image-editor/editor-dropzone"
 import CropEditor from "@/components/image-editor/crop-editor"
+import { useConvertStore } from "@/store/useConvertStore"
 
 export default function ImageEditor() {
     const [file, setFile] = useState<File | null>(null)
+    const pendingEditorFile = useConvertStore(s => s.pendingEditorFile)
+    const setPendingEditorFile = useConvertStore(s => s.setPendingEditorFile)
+
+    useEffect(() => {
+        if (pendingEditorFile) {
+            setFile(pendingEditorFile)
+            setPendingEditorFile(null)
+        }
+    }, [pendingEditorFile, setPendingEditorFile])
 
     return (
         <section className="section py-8">

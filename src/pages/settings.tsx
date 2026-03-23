@@ -1,5 +1,6 @@
 import DefaultFormat from "@/components/settings/default-format";
 import QualityPicker from "@/components/settings/quality";
+import DefaultOutputFolder from "@/components/settings/default-output-folder";
 
 export default function Settings() {
     return (
@@ -13,6 +14,7 @@ export default function Settings() {
             <div className="flex flex-col gap-y-6">
                 <QualityPicker />
                 <DefaultFormat />
+                <DefaultOutputFolder />
             </div>
         </section>
     )

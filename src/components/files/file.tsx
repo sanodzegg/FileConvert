@@ -6,7 +6,7 @@ import {
     ComboboxItem,
     ComboboxList,
 } from "@/components/ui/combobox"
-import { ArrowRightIcon, MoveRight, X } from "lucide-react"
+import { ArrowRightIcon, MoveRight, Pencil, X } from "lucide-react"
 import { useConvertStore } from "@/store/useConvertStore"
 import { fileKey, getExtension, formatBytes } from "@/utils/fileUtils"
 import { getFormatsForFile } from "@/engines/engineRegistry"
@@ -14,6 +14,9 @@ import { Button } from "../ui/button"
 import FileSettingsDialog from "./file-settings-dialog"
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip"
 import { convertSingle } from "@/services/conversionService"
+import { useNavigate } from "react-router-dom"
+
+const IMAGE_EXTS = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp', 'tiff', 'tif', 'heic', 'heif', 'avif', 'jfif', 'svg'])
 
 export default function File({ data }: { data: File }) {
     const ext = getExtension(data)
@@ -31,11 +34,20 @@ export default function File({ data }: { data: File }) {
     const isDone = useConvertStore(s => !!s.convertedFiles[fileKey(data)])
     const failedError = useConvertStore(s => s.failedFiles[fileKey(data)] ?? null)
     const removeFile = useConvertStore(s => s.removeFile)
+    const setPendingEditorFile = useConvertStore(s => s.setPendingEditorFile)
     const { quality, fileSettings, convertedFiles, startConversion, setConvertedFile, setFailedFile, setCurrentFileName } = useConvertStore()
+    const navigate = useNavigate()
+
+    const isImage = ext ? IMAGE_EXTS.has(ext.toLowerCase()) : false
 
     const handleConvertSingle = () => convertSingle(data, {
         quality, fileSettings, convertedFiles, startConversion, setConvertedFile, setFailedFile, setCurrentFileName, removeFile,
     })
+
+    const handleEditInEditor = () => {
+        setPendingEditorFile(data)
+        navigate('/extensions/image-editor')
+    }
 
     if (isDone) return null;
 
@@ -75,6 +87,18 @@ export default function File({ data }: { data: File }) {
                         </TooltipContent>
                     </TooltipTrigger>
                 </Tooltip>
+                {isImage && (
+                    <Tooltip>
+                        <TooltipTrigger>
+                            <Button variant={'secondary'} className={'group p-2.5! h-full!'} onClick={handleEditInEditor}>
+                                <Pencil className="size-4" />
+                            </Button>
+                            <TooltipContent>
+                                <p className="text-sm font-light text-accent">Edit in Image Editor</p>
+                            </TooltipContent>
+                        </TooltipTrigger>
+                    </Tooltip>
+                )}
                 <Tooltip>
                     <TooltipTrigger>
                         <Button variant={'secondary'} className={'group p-2.5! h-full!'} onClick={handleConvertSingle}>

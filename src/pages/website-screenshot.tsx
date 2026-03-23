@@ -13,9 +13,16 @@ const VIEWPORT_PRESETS = [
   { label: 'Desktop', value: 1440 },
   { label: 'Wide', value: 1920 },
 ]
+const USER_AGENT_PRESETS = [
+  { label: 'Default', value: '' },
+  { label: 'Chrome', value: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36' },
+  { label: 'Safari', value: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15' },
+  { label: 'Mobile', value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1' },
+  { label: 'Bot', value: 'Googlebot/2.1 (+http://www.google.com/bot.html)' },
+]
 
 export default function WebsiteScreenshot() {
-  const { state, capture, save, setUrl, blurUrl, setFormat, setViewportWidth, reset } = useScreenshot()
+  const { state, capture, save, setUrl, blurUrl, setFormat, setViewportWidth, setUserAgent, reset } = useScreenshot()
   const [isOnline, setIsOnline] = useState(navigator.onLine)
 
   useEffect(() => {
@@ -159,6 +166,28 @@ export default function WebsiteScreenshot() {
               min={320}
               max={3840}
             />
+          </div>
+
+          {/* User agent */}
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">User agent</Label>
+            <div className="flex gap-1.5 flex-wrap">
+              {USER_AGENT_PRESETS.map(p => (
+                <button
+                  key={p.label}
+                  onClick={() => setUserAgent(p.value)}
+                  disabled={isCapturing}
+                  className={cn(
+                    'cursor-pointer rounded-lg border px-2.5 py-1 text-xs transition-colors',
+                    state.userAgent === p.value
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-border text-muted-foreground hover:border-primary/50'
+                  )}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Capture button */}

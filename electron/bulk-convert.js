@@ -37,13 +37,16 @@ function collectImages(dir) {
   return results
 }
 
-async function convertFile(srcPath, targetFormat, quality, outputMode, deleteOriginal, allowOverwrite = false) {
+async function convertFile(srcPath, targetFormat, quality, outputMode, deleteOriginal, allowOverwrite = false, customOutputFolder = null) {
   const ext = '.' + targetFormat
   const dir = path.dirname(srcPath)
   const base = path.basename(srcPath, path.extname(srcPath))
 
   let destPath
-  if (outputMode === 'subfolder') {
+  if (customOutputFolder) {
+    fs.mkdirSync(customOutputFolder, { recursive: true })
+    destPath = path.join(customOutputFolder, base + ext)
+  } else if (outputMode === 'subfolder') {
     const outDir = path.join(dir, 'converted')
     fs.mkdirSync(outDir, { recursive: true })
     destPath = path.join(outDir, base + ext)
@@ -112,17 +115,17 @@ function registerBulkConvertHandlers(mainWindow) {
   })
 
   // Convert all images in a folder
-  ipcMain.handle('bulk-convert-folder', async (event, { folderPath, targetFormat, quality, outputMode, deleteOriginal }) => {
+  ipcMain.handle('bulk-convert-folder', async (event, { folderPath, targetFormat, quality, outputMode, deleteOriginal, customOutputFolder }) => {
     const allImages = collectImages(folderPath)
     // Skip files already in the target format (alongside mode would produce src === dest)
-    const images = outputMode === 'subfolder'
+    const images = (outputMode === 'subfolder' || customOutputFolder)
       ? allImages
       : allImages.filter(p => !isSameFormat(p, targetFormat))
     const results = []
 
     for (const imgPath of images) {
       try {
-        const result = await convertFile(imgPath, targetFormat, quality, outputMode, deleteOriginal)
+        const result = await convertFile(imgPath, targetFormat, quality, outputMode, deleteOriginal, false, customOutputFolder)
         results.push({ ok: true, ...result })
       } catch (err) {
         results.push({ ok: false, srcPath: imgPath, error: err.message })
@@ -139,7 +142,7 @@ function registerBulkConvertHandlers(mainWindow) {
   })
 
   // Start watching a folder for new images
-  ipcMain.handle('bulk-watch-start', async (_event, { folderPath, targetFormat, quality, outputMode, deleteOriginal }) => {
+  ipcMain.handle('bulk-watch-start', async (_event, { folderPath, targetFormat, quality, outputMode, deleteOriginal, customOutputFolder }) => {
     // Stop any existing watcher for this folder
     if (watchers.has(folderPath)) {
       watchers.get(folderPath).close()
@@ -169,7 +172,7 @@ function registerBulkConvertHandlers(mainWindow) {
       await new Promise(r => setTimeout(r, 500))
 
       try {
-        const result = await convertFile(fullPath, targetFormat, quality, outputMode, deleteOriginal, true)
+        const result = await convertFile(fullPath, targetFormat, quality, outputMode, deleteOriginal, true, customOutputFolder)
         mainWindow.webContents.send('bulk-watch-converted', { ok: true, ...result })
       } catch (err) {
         mainWindow.webContents.send('bulk-watch-converted', { ok: false, srcPath: fullPath, error: err.message })
@@ -183,9 +186,9 @@ function registerBulkConvertHandlers(mainWindow) {
   })
 
   // Retry a single failed file
-  ipcMain.handle('bulk-retry-file', async (_event, { srcPath, targetFormat, quality, outputMode, deleteOriginal }) => {
+  ipcMain.handle('bulk-retry-file', async (_event, { srcPath, targetFormat, quality, outputMode, deleteOriginal, customOutputFolder }) => {
     try {
-      const result = await convertFile(srcPath, targetFormat, quality, outputMode, deleteOriginal, true)
+      const result = await convertFile(srcPath, targetFormat, quality, outputMode, deleteOriginal, true, customOutputFolder)
       return { ok: true, ...result }
     } catch (err) {
       return { ok: false, srcPath, error: err.message }

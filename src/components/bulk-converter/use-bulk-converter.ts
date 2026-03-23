@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useConvertStore } from '@/store/useConvertStore'
 
 export type OutputMode = 'alongside' | 'subfolder'
 
@@ -41,6 +42,7 @@ const uid = () => String(++idCounter)
 export function useBulkConverter() {
   const [state, setState] = useState<BulkState>(INITIAL)
   const watchCleanupRef = useRef<(() => void) | null>(null)
+  const defaultOutputFolder = useConvertStore(s => s.defaultOutputFolder)
 
   // Subscribe to watch events
   useEffect(() => {
@@ -87,6 +89,7 @@ export function useBulkConverter() {
       quality: state.quality,
       outputMode: state.outputMode,
       deleteOriginal: state.deleteOriginal,
+      customOutputFolder: defaultOutputFolder ?? undefined,
     }
 
     // Subscribe to progress events for the progress bar only
@@ -121,6 +124,7 @@ export function useBulkConverter() {
         quality: state.quality,
         outputMode: state.outputMode,
         deleteOriginal: state.deleteOriginal,
+        customOutputFolder: defaultOutputFolder ?? undefined,
       }
       await window.electron.bulkWatchStart(opts)
       setState(s => ({ ...s, watching: true }))
@@ -160,6 +164,7 @@ export function useBulkConverter() {
       quality: state.quality,
       outputMode: state.outputMode,
       deleteOriginal: state.deleteOriginal,
+      customOutputFolder: defaultOutputFolder ?? undefined,
     }
 
     try {

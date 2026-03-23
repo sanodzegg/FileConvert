@@ -34,7 +34,7 @@ export function SliderRow({ label, value, min, max, neutral, step = 1, onChange,
           step={step}
           value={[value]}
           onValueChange={v => onChange(Array.isArray(v) ? v[0] : v)}
-          onValueCommit={onCommit ? v => onCommit(Array.isArray(v) ? v[0] : v) : undefined}
+          onValueCommitted={onCommit ? (v: number | readonly number[]) => onCommit(Array.isArray(v) ? v[0] : v as number) : undefined}
         />
       </div>
     </div>

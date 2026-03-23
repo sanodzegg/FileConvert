@@ -5,6 +5,13 @@ import { useBulkConverter } from '@/components/bulk-converter/use-bulk-converter
 import { BulkSettings } from '@/components/bulk-converter/bulk-settings'
 import { BulkFileRow } from '@/components/bulk-converter/bulk-file-row'
 import { BulkSummary } from '@/components/bulk-converter/bulk-summary'
+import { useRef, useEffect, useState } from 'react'
+
+function formatEta(seconds: number): string {
+  if (seconds < 60) return `~${Math.ceil(seconds)}s left`
+  const m = Math.ceil(seconds / 60)
+  return `~${m}m left`
+}
 
 export default function BulkConverter() {
   const { state, pickFolder, startConvert, toggleWatch, reset, setSetting, retryFile } = useBulkConverter()
@@ -14,6 +21,32 @@ export default function BulkConverter() {
   const progressPct = state.progress.total > 0
     ? Math.round((state.progress.done / state.progress.total) * 100)
     : 0
+
+  // ETA tracking
+  const startTimeRef = useRef<number | null>(null)
+  const prevDoneRef = useRef(0)
+  const [eta, setEta] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (isRunning) {
+      if (startTimeRef.current === null) {
+        startTimeRef.current = Date.now()
+        prevDoneRef.current = 0
+      }
+      const done = state.progress.done
+      const total = state.progress.total
+      if (done > 0 && total > 0 && done !== prevDoneRef.current) {
+        prevDoneRef.current = done
+        const elapsed = (Date.now() - startTimeRef.current!) / 1000
+        const rate = done / elapsed
+        const remaining = (total - done) / rate
+        setEta(formatEta(remaining))
+      }
+    } else {
+      startTimeRef.current = null
+      setEta(null)
+    }
+  }, [isRunning, state.progress.done, state.progress.total])
 
   return (
     <section className="section py-8">
@@ -112,7 +145,7 @@ export default function BulkConverter() {
           {(isRunning || state.status === 'done') && state.progress.total > 0 && (
             <div className="space-y-1.5">
               <div className="flex justify-between text-[10px] text-muted-foreground">
-                <span>{isRunning ? 'Converting…' : 'Done'}</span>
+                <span>{isRunning ? (eta ?? 'Converting…') : 'Done'}</span>
                 <span>{state.progress.done} / {state.progress.total} ({progressPct}%)</span>
               </div>
               <div className="h-1.5 w-full rounded-full bg-secondary overflow-hidden">

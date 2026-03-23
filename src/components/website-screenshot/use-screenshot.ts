@@ -9,6 +9,7 @@ export interface ScreenshotState {
   url: string
   format: 'png' | 'jpg' | 'webp'
   viewportWidth: number
+  userAgent: string
   captureStatus: CaptureStatus
   preview: string | null       // base64 data URL for display
   buffer: number[] | null      // raw bytes for saving
@@ -22,6 +23,7 @@ const INITIAL: ScreenshotState = {
   url: '',
   format: 'png',
   viewportWidth: 1440,
+  userAgent: '',
   captureStatus: 'idle',
   preview: null,
   buffer: null,
@@ -50,6 +52,7 @@ export function useScreenshot() {
         url: state.url,
         format: state.format,
         viewportWidth: state.viewportWidth,
+        userAgent: state.userAgent || undefined,
       })
       setState(s => ({ ...s, captureStatus: 'done', preview: result.preview, buffer: result.buffer }))
     } catch (err: unknown) {
@@ -82,7 +85,8 @@ export function useScreenshot() {
   const blurUrl = () => setState(s => ({ ...s, url: normalizeUrl(s.url) }))
   const setFormat = (format: ScreenshotState['format']) => setState(s => ({ ...s, format }))
   const setViewportWidth = (viewportWidth: number) => setState(s => ({ ...s, viewportWidth }))
+  const setUserAgent = (userAgent: string) => setState(s => ({ ...s, userAgent }))
   const reset = () => setState(s => ({ ...INITIAL, browserStatus: s.browserStatus }))
 
-  return { state, capture, save, setUrl, blurUrl, setFormat, setViewportWidth, reset }
+  return { state, capture, save, setUrl, blurUrl, setFormat, setViewportWidth, setUserAgent, reset }
 }

@@ -25,8 +25,12 @@ export const createSettingsSlice: StateCreator<
   defaultImageFormat: 'webp',
   defaultDocumentFormat: 'pdf',
   defaultVideoFormat: 'mp4',
+  defaultOutputFolder: null,
+  pendingEditorFile: null,
   setQuality: (quality) => set({ quality }),
   setDefaultImageFormat: (defaultImageFormat) => set({ defaultImageFormat }),
   setDefaultDocumentFormat: (defaultDocumentFormat) => set({ defaultDocumentFormat }),
   setDefaultVideoFormat: (defaultVideoFormat) => set({ defaultVideoFormat }),
+  setDefaultOutputFolder: (defaultOutputFolder) => set({ defaultOutputFolder }),
+  setPendingEditorFile: (pendingEditorFile) => set({ pendingEditorFile }),
 })

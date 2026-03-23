@@ -1,5 +1,7 @@
 import { cn } from '@/lib/utils'
 import type { BulkState, OutputMode } from './use-bulk-converter'
+import { useConvertStore } from '@/store/useConvertStore'
+import { FolderOpen } from 'lucide-react'
 
 const FORMATS = ['webp', 'png', 'jpg', 'avif']
 const OUTPUT_MODES: { value: OutputMode; label: string; desc: string }[] = [
@@ -14,6 +16,8 @@ interface Props {
 }
 
 export function BulkSettings({ state, setSetting, disabled }: Props) {
+  const defaultOutputFolder = useConvertStore(s => s.defaultOutputFolder)
+
   return (
     <div className="space-y-5">
       {/* Format */}
@@ -84,6 +88,16 @@ export function BulkSettings({ state, setSetting, disabled }: Props) {
           ))}
         </div>
       </div>
+
+      {/* Default output folder notice */}
+      {defaultOutputFolder && (
+        <div className="flex items-start gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2">
+          <FolderOpen className="size-3.5 text-primary shrink-0 mt-0.5" />
+          <p className="text-[10px] text-primary leading-relaxed truncate" title={defaultOutputFolder}>
+            Output: {defaultOutputFolder}
+          </p>
+        </div>
+      )}
 
       {/* Delete originals */}
       <div className="flex items-center justify-between">
