@@ -1,6 +1,6 @@
 {
-  "name": "file-convert",
-  "version": "1.3.0",
+  "name": "cone",
+  "version": "1.4.0",
   "description": "",
   "main": "main.js",
   "scripts": {
@@ -18,8 +18,8 @@
   "author": "",
   "license": "ISC",
   "build": {
-    "appId": "com.sanodzegg.fileconvert",
-    "productName": "FileConvert",
+    "appId": "com.sanodzegg.cone",
+    "productName": "Cone",
     "mac": {
       "icon": "build-assets/icon.icns",
       "category": "public.app-category.graphics-design",

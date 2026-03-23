@@ -21,10 +21,10 @@ export default function Navigation() {
     return (
         <section className="border-b border-b-gray-200 dark:border-b-gray-50/10">
             <div className="flex items-center justify-between py-2.5 max-w-5xl mx-auto px-10">
-                <div className="flex items-center justify-center gap-x-2 shrink-0">
-                    <img src={LogoLight} alt="FileConvert logo" className="h-13 w-13 dark:hidden" />
-                    <img src={LogoDark} alt="FileConvert logo" className="h-13 w-13 hidden dark:block" />
-                    <h1 className="text-2xl text-black dark:text-white">FileConvert</h1>
+                <div className="flex items-center justify-center gap-x-1 shrink-0">
+                    <img src={LogoLight} alt="Cone logo" className="select-none pointer-events-none h-8 w-8 dark:hidden" />
+                    <img src={LogoDark} alt="Cone logo" className="select-none pointer-events-none h-8 w-8 hidden dark:block" />
+                    <h1 className="text-4xl text-black dark:text-white">Cone</h1>
                 </div>
 
                 <nav className="w-full flex justify-end mr-10">
