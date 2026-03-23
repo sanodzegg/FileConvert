@@ -1,7 +1,9 @@
+import { useMemo, useEffect } from "react"
 import { Button } from "../ui/button"
 import { Download } from "lucide-react"
 import JSZip from "jszip"
 import icnsReadme from "./icns-readme.txt?raw"
+
 
 const FAVICON_SIZES = [16, 32, 48, 64, 128, 256, 512, 1024]
 
@@ -27,6 +29,12 @@ function downloadBlob(blob: Blob, name: string) {
 
 export default function FaviconResults({ result, sourceFile, onReset }: Props) {
     const baseName = sourceFile.name.replace(/\.[^.]+$/, '')
+
+    const previewUrls = useMemo(() =>
+        Object.fromEntries(result.pngs.map(({ size, buf }) => [size, URL.createObjectURL(new Blob([buf], { type: 'image/png' }))]))
+    , [result.pngs])
+
+    useEffect(() => () => { Object.values(previewUrls).forEach(URL.revokeObjectURL) }, [previewUrls])
 
     const downloadIco = () => {
         downloadBlob(new Blob([result.ico], { type: 'image/x-icon' }), 'favicon.ico')
@@ -109,7 +117,7 @@ export default function FaviconResults({ result, sourceFile, onReset }: Props) {
             {/* PNG sizes */}
             <ul className="space-y-2.5">
                 {result.pngs.map(({ size, buf }) => {
-                    const url = URL.createObjectURL(new Blob([buf], { type: 'image/png' }))
+                    const url = previewUrls[size]
                     return (
                         <li key={size} className="flex items-center justify-between p-4 rounded-2xl border border-accent bg-secondary/30">
                             <div className="flex items-center gap-3">

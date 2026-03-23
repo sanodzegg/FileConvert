@@ -2,6 +2,7 @@ import { formatBytes } from "@/utils/fileUtils"
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip"
 import { HelpCircle } from "lucide-react"
 
+
 interface ConversionStatsProps {
     isDone: boolean
     currentFileName: string
@@ -28,9 +29,14 @@ export default function ConversionStats({
     return (
         <div className="mt-6 p-4 rounded-2xl border border-accent bg-secondary/30 space-y-3">
             <div className="flex items-center justify-between text-sm">
-                <span className="text-accent-foreground/70 truncate max-w-xs">
-                    {isDone ? 'Done' : `Converting ${currentFileName}`}
-                </span>
+                <Tooltip>
+                    <TooltipTrigger>
+                        <span className="text-accent-foreground/70 truncate max-w-xs cursor-default">
+                            {isDone ? 'Done' : `Converting ${currentFileName}`}
+                        </span>
+                    </TooltipTrigger>
+                    {!isDone && <TooltipContent><p>{currentFileName}</p></TooltipContent>}
+                </Tooltip>
                 <span className="text-accent-foreground font-medium ml-4 shrink-0">{Math.round(progress)}%</span>
             </div>
             <div className="h-2 w-full rounded-full bg-accent overflow-hidden">

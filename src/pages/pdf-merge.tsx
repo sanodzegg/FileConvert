@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { FilePlus, Download, AlertCircle, RotateCcw, Loader2, GripVertical, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 type Status = 'idle' | 'merging' | 'done' | 'error'
@@ -147,7 +148,12 @@ export default function PdfMerge() {
                   >
                     <GripVertical className="size-3.5 text-muted-foreground shrink-0 cursor-grab" />
                     <span className="text-[10px] text-muted-foreground w-4 shrink-0">{i + 1}</span>
-                    <span className="flex-1 truncate text-foreground">{f.name}</span>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <span className="flex-1 truncate text-foreground cursor-default">{f.name}</span>
+                      </TooltipTrigger>
+                      <TooltipContent><p>{f.name}</p></TooltipContent>
+                    </Tooltip>
                     <span className="text-[10px] text-muted-foreground shrink-0">{formatBytes(f.size)}</span>
                     <button onClick={() => remove(f.id)} className="shrink-0 text-muted-foreground hover:text-destructive transition-colors">
                       <X className="size-3" />

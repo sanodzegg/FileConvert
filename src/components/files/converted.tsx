@@ -93,7 +93,12 @@ export default function ConvertedFiles() {
                     {snapshot.map((f) => (
                         <li key={f.name} className="flex items-center justify-between p-4 rounded-2xl border border-accent bg-secondary/30">
                             <div className="flex items-center gap-2 min-w-0">
-                                <span className="text-sm text-accent-foreground font-body truncate">{f.name}</span>
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <span className="text-sm text-accent-foreground font-body truncate cursor-default">{f.name}</span>
+                                    </TooltipTrigger>
+                                    <TooltipContent><p>{f.name}</p></TooltipContent>
+                                </Tooltip>
                                 {f.customized && (
                                     <span className="shrink-0 text-xs font-medium px-1.5 py-0.5 rounded-md bg-yellow-400/20 text-yellow-600 dark:text-yellow-400 border border-yellow-400/30">
                                         Modified
