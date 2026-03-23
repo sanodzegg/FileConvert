@@ -31,7 +31,7 @@ contextBridge.exposeInMainWorld('electron', {
 
   // Website PDF
   websitePdfGenerate: (opts) => ipcRenderer.invoke('website-pdf-generate', opts),
-  websitePdfSave: (opts) => ipcRenderer.invoke('website-pdf-save', opts),
+  websitePdfSave: () => ipcRenderer.invoke('website-pdf-save'),
   onWebsitePdfWaiting: (cb) => {
     const handler = (_e, data) => cb(data)
     ipcRenderer.on('website-pdf-waiting', handler)

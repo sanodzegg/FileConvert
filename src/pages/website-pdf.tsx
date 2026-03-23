@@ -37,7 +37,7 @@ export default function WebsitePdf() {
 
   const [status, setStatus] = useState<Status>('idle')
   const [error, setError] = useState<string | null>(null)
-  const [buffer, setBuffer] = useState<number[] | null>(null)
+  const [ready, setReady] = useState(false)
   const [savedPath, setSavedPath] = useState<string | null>(null)
   const [isOnline, setIsOnline] = useState(navigator.onLine)
   const [countdown, setCountdown] = useState<number | null>(null)
@@ -78,15 +78,15 @@ export default function WebsitePdf() {
     setUrl(normalized)
     setStatus('generating')
     setError(null)
-    setBuffer(null)
+    setReady(false)
     setSavedPath(null)
     try {
-      const result = await window.electron.websitePdfGenerate({
+      await window.electron.websitePdfGenerate({
         url: normalized, viewportWidth, format, orientation,
         marginTop, marginBottom, marginLeft, marginRight,
         printBackground, waitUntil, waitTime,
       })
-      setBuffer(result.buffer)
+      setReady(true)
       setStatus('done')
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err)
@@ -96,8 +96,7 @@ export default function WebsitePdf() {
   }
 
   const save = async () => {
-    if (!buffer) return
-    const result = await window.electron.websitePdfSave({ buffer, url })
+    const result = await window.electron.websitePdfSave()
     if (!result.canceled && result.filePath) setSavedPath(result.filePath)
   }
 
@@ -105,7 +104,7 @@ export default function WebsitePdf() {
     setUrl('')
     setStatus('idle')
     setError(null)
-    setBuffer(null)
+    setReady(false)
     setSavedPath(null)
     setCountdown(null)
   }
@@ -345,24 +344,22 @@ export default function WebsitePdf() {
             }
           </Button>
 
-          {isDone && buffer && (
-            <Button variant="outline" className="w-full gap-2" size="sm" onClick={save}>
-              <Download className="size-3.5" />
-              {savedPath ? 'Save again' : 'Download PDF'}
-            </Button>
-          )}
-
-          {savedPath && <p className="text-[10px] text-muted-foreground break-all">{savedPath}</p>}
         </div>
 
         {/* Right: status */}
         <div className="flex-1 min-w-0">
-          {isDone && buffer ? (
-            <div className="rounded-xl border border-green-500/30 bg-green-500/10 p-6 flex flex-col items-center justify-center gap-3 text-center h-64">
-              <FileDown className="size-8 text-green-500" />
+          {isDone && ready ? (
+            <div
+              onClick={save}
+              className="rounded-xl border border-green-500/30 bg-green-500/10 p-6 flex flex-col items-center justify-center gap-3 text-center h-64 cursor-pointer hover:bg-green-500/20 transition-colors"
+            >
+              <Download className="size-8 text-green-500" />
               <div>
-                <p className="text-sm font-medium text-green-500">PDF ready</p>
-                <p className="text-xs text-muted-foreground mt-1">Click Download PDF to save it.</p>
+                <p className="text-sm font-medium text-green-500">{savedPath ? 'Save again' : 'Download PDF'}</p>
+                {savedPath
+                  ? <p className="text-[10px] text-muted-foreground mt-1 break-all">{savedPath}</p>
+                  : <p className="text-xs text-muted-foreground mt-1">Click to save the PDF file.</p>
+                }
               </div>
             </div>
           ) : status === 'timeout' ? (

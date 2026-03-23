@@ -50,8 +50,8 @@ declare interface Window {
       printBackground: boolean
       waitUntil: 'load' | 'domcontentloaded' | 'networkidle'
       waitTime: number
-    }) => Promise<{ buffer: number[] }>
-    websitePdfSave: (opts: { buffer: number[]; url: string }) => Promise<{ canceled: boolean; filePath?: string }>
+    }) => Promise<{ ok: boolean }>
+    websitePdfSave: () => Promise<{ canceled: boolean; filePath?: string }>
     onWebsitePdfWaiting: (cb: (data: { waitTime: number }) => void) => () => void
 
     // Website screenshot
