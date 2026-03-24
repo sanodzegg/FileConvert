@@ -5,7 +5,7 @@ import { fileKey } from "@/utils/fileUtils"
 import { convertAll } from "@/services/conversionService"
 
 export default function FileList() {
-    const { files, fileSettings, quality, imageQuality, videoQuality, audioQuality, convertedCount, convertingTotal, convertedFiles, failedFiles, setConvertedFile, setFailedFile, setCurrentFileName, startConversion, removeFile } = useConvertStore()
+    const { files, fileSettings, quality, imageQuality, convertedCount, convertingTotal, convertedFiles, failedFiles, setConvertedFile, setFailedFile, setCurrentFileName, startConversion, removeFile } = useConvertStore()
 
     const failedCount = Object.keys(failedFiles).length
     const isConverting = convertingTotal > 0 && (convertedCount + failedCount) < convertingTotal
@@ -15,8 +15,6 @@ export default function FileList() {
         await convertAll(files, {
             quality,
             imageQuality,
-            videoQuality,
-            audioQuality,
             fileSettings,
             convertedFiles,
             startConversion,

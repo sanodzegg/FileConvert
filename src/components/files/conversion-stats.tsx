@@ -11,6 +11,7 @@ interface ConversionStatsProps {
     convertingTotal: number
     savedPercent: number | null
     hasSuspiciousSavings: boolean
+    suspiciousReason?: string
     totalOutputSize: number
     totalInputSize: number
 }
@@ -23,6 +24,7 @@ export default function ConversionStats({
     convertingTotal,
     savedPercent,
     hasSuspiciousSavings,
+    suspiciousReason,
     totalOutputSize,
     totalInputSize,
 }: ConversionStatsProps) {
@@ -59,8 +61,8 @@ export default function ConversionStats({
                                 <TooltipTrigger className="cursor-help">
                                     <HelpCircle className="size-3 text-muted-foreground shrink-0" />
                                 </TooltipTrigger>
-                                <TooltipContent className="max-w-56 text-center">
-                                    <p>Same-format files were re-encoded. No visual quality was lost. Savings come from metadata removal and compression optimization.</p>
+                                <TooltipContent className="max-w-64 text-center">
+                                    <p>{suspiciousReason}</p>
                                 </TooltipContent>
                             </Tooltip>
                         )}

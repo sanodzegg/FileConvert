@@ -36,10 +36,12 @@ export default function ConvertedFiles() {
     const savedPercent = isDone && imageFiles.length > 0 && imageInputSize > 0
         ? Math.round((1 - imageOutputSize / imageInputSize) * 100)
         : null
-    const hasSuspiciousSavings = savedPercent !== null && (
-        (quality >= 70 && imageFiles.some(f => f.sourceFormat === f.format)) ||
-        (quality >= 80 && savedPercent > 50)
-    )
+    const hasSameFormatReencode = quality >= 70 && imageFiles.some(f => f.sourceFormat === f.format)
+    const hasHighSavingsAtHighQuality = quality >= 80 && savedPercent !== null && savedPercent > 50
+    const hasSuspiciousSavings = savedPercent !== null && (hasSameFormatReencode || hasHighSavingsAtHighQuality)
+    const suspiciousReason = hasSameFormatReencode
+        ? 'Some files were re-encoded to the same format. Savings come from metadata removal and compression re-optimization, not quality loss.'
+        : 'Savings above 50% at high quality are unusual. This likely means the originals had heavy metadata or inefficient encoding — not quality loss.'
 
     if (convertingTotal === 0) return null
 
@@ -122,6 +124,7 @@ export default function ConvertedFiles() {
                 convertingTotal={convertingTotal}
                 savedPercent={savedPercent}
                 hasSuspiciousSavings={hasSuspiciousSavings}
+                suspiciousReason={suspiciousReason}
                 totalOutputSize={totalOutputSize}
                 totalInputSize={totalInputSize}
             />

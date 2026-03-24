@@ -6,8 +6,6 @@ type ConversionDeps = Pick<
   ConvertStore,
   | 'quality'
   | 'imageQuality'
-  | 'videoQuality'
-  | 'audioQuality'
   | 'fileSettings'
   | 'convertedFiles'
   | 'startConversion'
@@ -20,8 +18,6 @@ type ConversionDeps = Pick<
 function getDefaultQualityForFile(file: File, deps: ConversionDeps): number {
   const engineId = getEngineForFile(file)?.id
   if (engineId === 'image') return deps.imageQuality
-  if (engineId === 'video') return deps.videoQuality
-  if (engineId === 'audio') return deps.audioQuality
   return deps.quality
 }
 

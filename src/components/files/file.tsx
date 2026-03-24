@@ -6,7 +6,7 @@ import {
     ComboboxItem,
     ComboboxList,
 } from "@/components/ui/combobox"
-import { ArrowRightIcon, MoveRight, Pencil, X } from "lucide-react"
+import { ArrowRightIcon, Loader2, MoveRight, Pencil, X } from "lucide-react"
 import { useConvertStore } from "@/store/useConvertStore"
 import { fileKey, getExtension, formatBytes } from "@/utils/fileUtils"
 import { getFormatsForFile, getEngineForFile } from "@/engines/engineRegistry"
@@ -36,18 +36,21 @@ export default function File({ data }: { data: File }) {
     const failedError = useConvertStore(s => s.failedFiles[fileKey(data)] ?? null)
     const removeFile = useConvertStore(s => s.removeFile)
     const setPendingEditorFile = useConvertStore(s => s.setPendingEditorFile)
-    const { quality, imageQuality, videoQuality, audioQuality, fileSettings, convertedFiles, startConversion, setConvertedFile, setFailedFile, setCurrentFileName } = useConvertStore()
+    const currentFileName = useConvertStore(s => s.currentFileName)
+    const convertingTotal = useConvertStore(s => s.convertingTotal)
+    const { quality, imageQuality, fileSettings, convertedFiles, startConversion, setConvertedFile, setFailedFile, setCurrentFileName } = useConvertStore()
+    const isConverting = convertingTotal > 0 && currentFileName === data.name
     const navigate = useNavigate()
 
     const isImage = ext ? IMAGE_EXTS.has(ext.toLowerCase()) : false
 
     const perFileQuality = fileSettings[fileKey(data)]?.quality
     const engineId = getEngineForFile(data)?.id
-    const effectiveQuality = perFileQuality ?? (engineId === 'image' ? imageQuality : engineId === 'video' ? videoQuality : engineId === 'audio' ? audioQuality : quality)
+    const effectiveQuality = perFileQuality ?? (engineId === 'image' ? imageQuality : quality)
     const estimatedSize = isImage && targetFormat ? estimateOutputSize(data.size, ext, targetFormat, effectiveQuality) : null
 
     const handleConvertSingle = () => convertSingle(data, {
-        quality, imageQuality, videoQuality, audioQuality, fileSettings, convertedFiles, startConversion, setConvertedFile, setFailedFile, setCurrentFileName, removeFile,
+        quality, imageQuality, fileSettings, convertedFiles, startConversion, setConvertedFile, setFailedFile, setCurrentFileName, removeFile,
     })
 
     const handleEditInEditor = () => {
@@ -58,7 +61,7 @@ export default function File({ data }: { data: File }) {
     if (isDone) return null;
 
     return (
-        <div className={`flex items-center justify-start p-4 rounded-2xl border bg-secondary/30 ${failedError ? 'border-destructive/40 bg-destructive/5' : 'border-accent'}`}>
+        <div className={`flex items-center justify-start p-4 rounded-2xl border bg-secondary/30 ${failedError ? 'border-destructive/40 bg-destructive/5' : isConverting ? 'border-primary/40 bg-primary/5' : 'border-accent'}`}>
             <Badge variant={'secondary'} className="shrink-0 uppercase h-10 w-10 rounded-sm mr-2" style={colorStyle}>
                 {ext}
             </Badge>
@@ -77,10 +80,13 @@ export default function File({ data }: { data: File }) {
                 }
             </div>
             <div className="flex-1 flex justify-center">
-                <MoveRight size={24} className="stroke-accent" />
+                {isConverting
+                    ? <Loader2 className="size-5 text-primary animate-spin" />
+                    : <MoveRight size={24} className="stroke-accent" />
+                }
             </div>
             <div className="flex items-center gap-2">
-                <Combobox value={targetFormat} onValueChange={(v) => setTargetFormat(data, v ?? convertTo[0])} items={convertTo}>
+                <Combobox value={targetFormat} onValueChange={(v) => !isConverting && setTargetFormat(data, v ?? convertTo[0])} items={convertTo}>
                     <ComboboxInput className={'w-24! h-10! [&_input]:uppercase! [&_input]:select-none!'} readOnly />
                     <ComboboxContent>
                         <ComboboxList>

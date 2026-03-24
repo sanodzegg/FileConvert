@@ -31,8 +31,6 @@ export const useConvertStore = create<ConvertStore>()(
       partialize: (state) => ({
         quality: state.quality,
         imageQuality: state.imageQuality,
-        videoQuality: state.videoQuality,
-        audioQuality: state.audioQuality,
         defaultImageFormat: state.defaultImageFormat,
         defaultDocumentFormat: state.defaultDocumentFormat,
         defaultVideoFormat: state.defaultVideoFormat,

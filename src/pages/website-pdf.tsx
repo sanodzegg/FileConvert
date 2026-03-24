@@ -9,10 +9,10 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 type Status = 'idle' | 'generating' | 'done' | 'error' | 'timeout'
 
 const PAPER_FORMATS = ['A4', 'A3', 'A5', 'Letter', 'Legal', 'Tabloid', 'Ledger', 'A0', 'A1', 'A2', 'A6']
-const WAIT_UNTIL_OPTIONS: { value: 'load' | 'domcontentloaded' | 'networkidle'; label: string; exclamation?: string }[] = [
-  { value: 'domcontentloaded', label: 'DOM ready' },
-  { value: 'load', label: 'Load event' },
-  { value: 'networkidle', label: 'Network idle', exclamation: 'Pages can take a long time to fully load all network requests and may result in a timeout.' },
+const WAIT_UNTIL_OPTIONS: { value: 'load' | 'domcontentloaded' | 'networkidle'; label: string; desc: string; exclamation?: string }[] = [
+  { value: 'domcontentloaded', label: 'DOM ready', desc: 'Fastest — captures the page as soon as HTML is parsed, before images or scripts finish loading.' },
+  { value: 'load', label: 'Load event', desc: 'Balanced — waits for images and stylesheets to finish loading. Good default for most pages.' },
+  { value: 'networkidle', label: 'Network idle', desc: 'Thorough — waits until all network requests finish. Use for JS-heavy or lazy-loaded pages.', exclamation: 'Pages can take a long time to fully load all network requests and may result in a timeout.' },
 ]
 const VIEWPORT_PRESETS = [
   { label: 'Mobile', value: 390 },
@@ -263,23 +263,26 @@ export default function WebsitePdf() {
                   onClick={() => setWaitUntil(o.value)}
                   disabled={isGenerating}
                   className={cn(
-                    'cursor-pointer rounded-lg border px-3 py-1.5 text-xs text-left transition-colors',
+                    'cursor-pointer rounded-lg border px-3 py-2 text-left transition-colors',
                     waitUntil === o.value
-                      ? 'border-primary bg-primary/10 text-primary'
-                      : 'border-border text-muted-foreground hover:border-primary/50',
-                    o.exclamation && 'flex items-center justify-between'
+                      ? 'border-primary bg-primary/10'
+                      : 'border-border hover:border-primary/50'
                   )}
                 >
-                  {o.label} {o.exclamation &&
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <CircleAlert className={`size-3 ${waitUntil === o.value && 'text-yellow-500'}`} />
-                        <TooltipContent>
+                  <div className="flex items-center justify-between">
+                    <span className={cn('text-xs font-medium', waitUntil === o.value ? 'text-primary' : 'text-foreground')}>{o.label}</span>
+                    {o.exclamation && (
+                      <Tooltip>
+                        <TooltipTrigger onClick={e => e.stopPropagation()}>
+                          <CircleAlert className={cn('size-3', waitUntil === o.value ? 'text-yellow-500' : 'text-muted-foreground')} />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-56">
                           <p className="text-sm font-light text-accent">{o.exclamation}</p>
                         </TooltipContent>
-                      </TooltipTrigger>
-                    </Tooltip>
-                  }
+                      </Tooltip>
+                    )}
+                  </div>
+                  <p className={cn('text-[10px] mt-0.5', waitUntil === o.value ? 'text-primary/70' : 'text-muted-foreground')}>{o.desc}</p>
                 </button>
               ))}
             </div>

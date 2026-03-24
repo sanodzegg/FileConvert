@@ -5,8 +5,20 @@ import { useBulkConverter } from '@/components/bulk-converter/use-bulk-converter
 import { BulkSettings } from '@/components/bulk-converter/bulk-settings'
 import { BulkFileRow } from '@/components/bulk-converter/bulk-file-row'
 import { BulkSummary } from '@/components/bulk-converter/bulk-summary'
+import { useRef, useEffect } from 'react'
 export default function BulkConverter() {
   const { state, pickFolder, startConvert, toggleWatch, reset, setSetting, retryFile } = useBulkConverter()
+  const listRef = useRef<HTMLDivElement>(null)
+  const prevFileCountRef = useRef(0)
+
+  // In watch mode files prepend — scroll to top so new items are visible
+  useEffect(() => {
+    const count = state.files.length
+    if (state.watching && count > prevFileCountRef.current && listRef.current) {
+      listRef.current.scrollTop = 0
+    }
+    prevFileCountRef.current = count
+  }, [state.files.length, state.watching])
 
   const isRunning = state.status === 'converting'
   const hasDone = state.status === 'done' || state.files.length > 0
@@ -140,7 +152,7 @@ export default function BulkConverter() {
                   </span>
                 )}
               </div>
-              <div className="px-4 max-h-105 overflow-y-auto">
+              <div ref={listRef} className="px-4 max-h-105 overflow-y-auto [overflow-anchor:none]">
                 {state.files.map(f => (
                   <BulkFileRow key={f.id} file={f} onRetry={retryFile} />
                 ))}
