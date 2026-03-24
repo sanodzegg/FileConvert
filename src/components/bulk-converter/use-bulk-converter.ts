@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useConvertStore } from '@/store/useConvertStore'
 
-export type OutputMode = 'alongside' | 'subfolder'
+export type OutputMode = 'alongside' | 'subfolder' | 'custom'
 
 export interface ConvertedFile extends BulkFileResult {
   id: string
@@ -87,9 +87,9 @@ export function useBulkConverter() {
       folderPath: state.folderPath,
       targetFormat: state.targetFormat,
       quality: state.quality,
-      outputMode: state.outputMode,
+      outputMode: state.outputMode === 'custom' ? 'alongside' : state.outputMode,
       deleteOriginal: state.deleteOriginal,
-      customOutputFolder: defaultOutputFolder ?? undefined,
+      customOutputFolder: state.outputMode === 'custom' ? (defaultOutputFolder ?? undefined) : undefined,
     }
 
     // Subscribe to progress events for the progress bar only
@@ -122,9 +122,9 @@ export function useBulkConverter() {
         folderPath: state.folderPath,
         targetFormat: state.targetFormat,
         quality: state.quality,
-        outputMode: state.outputMode,
+        outputMode: state.outputMode === 'custom' ? 'alongside' : state.outputMode,
         deleteOriginal: state.deleteOriginal,
-        customOutputFolder: defaultOutputFolder ?? undefined,
+        customOutputFolder: state.outputMode === 'custom' ? (defaultOutputFolder ?? undefined) : undefined,
       }
       await window.electron.bulkWatchStart(opts)
       setState(s => ({ ...s, watching: true }))
@@ -162,9 +162,9 @@ export function useBulkConverter() {
       srcPath: file.srcPath!,
       targetFormat: state.targetFormat,
       quality: state.quality,
-      outputMode: state.outputMode,
+      outputMode: state.outputMode === 'custom' ? 'alongside' : state.outputMode,
       deleteOriginal: state.deleteOriginal,
-      customOutputFolder: defaultOutputFolder ?? undefined,
+      customOutputFolder: state.outputMode === 'custom' ? (defaultOutputFolder ?? undefined) : undefined,
     }
 
     try {

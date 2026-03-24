@@ -9,7 +9,8 @@ import {
 import { ArrowRightIcon, MoveRight, Pencil, X } from "lucide-react"
 import { useConvertStore } from "@/store/useConvertStore"
 import { fileKey, getExtension, formatBytes } from "@/utils/fileUtils"
-import { getFormatsForFile } from "@/engines/engineRegistry"
+import { getFormatsForFile, getEngineForFile } from "@/engines/engineRegistry"
+import { estimateOutputSize } from "@/utils/estimateSize"
 import { Button } from "../ui/button"
 import FileSettingsDialog from "./file-settings-dialog"
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip"
@@ -35,13 +36,18 @@ export default function File({ data }: { data: File }) {
     const failedError = useConvertStore(s => s.failedFiles[fileKey(data)] ?? null)
     const removeFile = useConvertStore(s => s.removeFile)
     const setPendingEditorFile = useConvertStore(s => s.setPendingEditorFile)
-    const { quality, fileSettings, convertedFiles, startConversion, setConvertedFile, setFailedFile, setCurrentFileName } = useConvertStore()
+    const { quality, imageQuality, videoQuality, audioQuality, fileSettings, convertedFiles, startConversion, setConvertedFile, setFailedFile, setCurrentFileName } = useConvertStore()
     const navigate = useNavigate()
 
     const isImage = ext ? IMAGE_EXTS.has(ext.toLowerCase()) : false
 
+    const perFileQuality = fileSettings[fileKey(data)]?.quality
+    const engineId = getEngineForFile(data)?.id
+    const effectiveQuality = perFileQuality ?? (engineId === 'image' ? imageQuality : engineId === 'video' ? videoQuality : engineId === 'audio' ? audioQuality : quality)
+    const estimatedSize = isImage && targetFormat ? estimateOutputSize(data.size, ext, targetFormat, effectiveQuality) : null
+
     const handleConvertSingle = () => convertSingle(data, {
-        quality, fileSettings, convertedFiles, startConversion, setConvertedFile, setFailedFile, setCurrentFileName, removeFile,
+        quality, imageQuality, videoQuality, audioQuality, fileSettings, convertedFiles, startConversion, setConvertedFile, setFailedFile, setCurrentFileName, removeFile,
     })
 
     const handleEditInEditor = () => {
@@ -60,7 +66,14 @@ export default function File({ data }: { data: File }) {
                 <h3 className="text-sm font-normal text-accent-foreground font-body truncate">{data.name}</h3>
                 {failedError
                     ? <p className="text-xs font-normal text-destructive">{failedError}</p>
-                    : <p className="text-xs font-normal text-accent-foreground/50">{formatBytes(data.size)}</p>
+                    : <p className="text-xs font-normal text-accent-foreground/50">
+                        {formatBytes(data.size)}
+                        {estimatedSize !== null && (
+                            <span className="ml-1.5">
+                                → <span className={estimatedSize < data.size ? 'text-green-500' : 'text-yellow-500'}>~{formatBytes(estimatedSize)}</span>
+                            </span>
+                        )}
+                    </p>
                 }
             </div>
             <div className="flex-1 flex justify-center">

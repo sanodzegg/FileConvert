@@ -26,7 +26,8 @@ const FIT_OPTIONS: { value: FitMode; label: string; description: string }[] = [
 export default function FileSettingsDialog({ file }: { file: File }) {
     const key = fileKey(file)
     const fileSettings = useConvertStore(s => s.fileSettings[key])
-    const globalQuality = useConvertStore(s => s.quality)
+    const imageQuality = useConvertStore(s => s.imageQuality)
+    const videoQuality = useConvertStore(s => s.videoQuality)
     const setFileSettings = useConvertStore(s => s.setFileSettings)
 
     const engineId = getEngineForFile(file)?.id
@@ -37,7 +38,8 @@ export default function FileSettingsDialog({ file }: { file: File }) {
     const [height, setHeight] = useState<string>(fileSettings?.height?.toString() ?? '')
     const [fit, setFit] = useState<FitMode>(fileSettings?.fit ?? 'max')
     const [keepMetadata, setKeepMetadata] = useState<boolean>(fileSettings?.keepMetadata ?? true)
-    const [quality, setQuality] = useState<number>(fileSettings?.quality ?? globalQuality)
+    const defaultQuality = isImage ? imageQuality : isVideo ? videoQuality : 60
+    const [quality, setQuality] = useState<number>(fileSettings?.quality ?? defaultQuality)
 
     const handleSave = () => {
         setFileSettings(file, {

@@ -1,12 +1,13 @@
 import { cn } from '@/lib/utils'
 import type { BulkState, OutputMode } from './use-bulk-converter'
 import { useConvertStore } from '@/store/useConvertStore'
-import { FolderOpen } from 'lucide-react'
+import { X } from 'lucide-react'
 
 const FORMATS = ['webp', 'png', 'jpg', 'avif']
 const OUTPUT_MODES: { value: OutputMode; label: string; desc: string }[] = [
   { value: 'alongside', label: 'Alongside originals', desc: 'Save converted files in the same folder' },
   { value: 'subfolder', label: 'Subfolder', desc: 'Save into a "converted/" subfolder' },
+  { value: 'custom', label: 'Custom folder', desc: 'Pick a specific output folder' },
 ]
 
 interface Props {
@@ -17,6 +18,13 @@ interface Props {
 
 export function BulkSettings({ state, setSetting, disabled }: Props) {
   const defaultOutputFolder = useConvertStore(s => s.defaultOutputFolder)
+  const setDefaultOutputFolder = useConvertStore(s => s.setDefaultOutputFolder)
+
+  const pickOutputFolder = async () => {
+    const path = await window.electron.bulkPickFolder()
+    if (path) setDefaultOutputFolder(path)
+    return path
+  }
 
   return (
     <div className="space-y-5">
@@ -68,7 +76,13 @@ export function BulkSettings({ state, setSetting, disabled }: Props) {
             <button
               key={m.value}
               disabled={disabled}
-              onClick={() => setSetting('outputMode', m.value)}
+              onClick={async () => {
+                if (m.value === 'custom') {
+                  const path = await pickOutputFolder()
+                  if (!path) return
+                }
+                setSetting('outputMode', m.value)
+              }}
               className={cn(
                 'w-full flex items-start gap-3 rounded-lg border px-3 py-2.5 text-left transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed',
                 state.outputMode === m.value
@@ -80,24 +94,26 @@ export function BulkSettings({ state, setSetting, disabled }: Props) {
                 'mt-0.5 size-3.5 rounded-full border-2 shrink-0',
                 state.outputMode === m.value ? 'border-primary bg-primary' : 'border-muted-foreground'
               )} />
-              <div>
+              <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium text-foreground leading-none mb-0.5">{m.label}</p>
-                <p className="text-[10px] text-muted-foreground">{m.desc}</p>
+                {m.value === 'custom' && state.outputMode === 'custom' && defaultOutputFolder
+                  ? <p className="text-[10px] text-primary truncate">{defaultOutputFolder}</p>
+                  : <p className="text-[10px] text-muted-foreground">{m.desc}</p>
+                }
               </div>
+              {m.value === 'custom' && state.outputMode === 'custom' && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); setDefaultOutputFolder(null); setSetting('outputMode', 'alongside') }}
+                  disabled={disabled}
+                  className="shrink-0 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40"
+                >
+                  <X className="size-3" />
+                </button>
+              )}
             </button>
           ))}
         </div>
       </div>
-
-      {/* Default output folder notice */}
-      {defaultOutputFolder && (
-        <div className="flex items-start gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2">
-          <FolderOpen className="size-3.5 text-primary shrink-0 mt-0.5" />
-          <p className="text-[10px] text-primary leading-relaxed truncate" title={defaultOutputFolder}>
-            Output: {defaultOutputFolder}
-          </p>
-        </div>
-      )}
 
       {/* Delete originals */}
       <div className="flex items-center justify-between">
