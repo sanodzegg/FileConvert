@@ -44,7 +44,7 @@ export function useSettingsSync(user: User | null) {
             .then(({ data }) => {
                 if (data) {
                     const remote: RemoteSettings = {
-                        image_quality: data.image_quality,
+                        image_quality: Number(data.image_quality),
                         default_image_format: data.default_image_format,
                         default_document_format: data.default_document_format,
                         default_video_format: data.default_video_format,
@@ -52,10 +52,10 @@ export function useSettingsSync(user: User | null) {
                     }
                     const differs =
                         remote.image_quality !== local.image_quality ||
-                        remote.default_image_format !== local.default_image_format ||
-                        remote.default_document_format !== local.default_document_format ||
-                        remote.default_video_format !== local.default_video_format ||
-                        remote.default_output_folder !== local.default_output_folder
+                        remote.default_image_format?.trim() !== local.default_image_format?.trim() ||
+                        remote.default_document_format?.trim() !== local.default_document_format?.trim() ||
+                        remote.default_video_format?.trim() !== local.default_video_format?.trim() ||
+                        (remote.default_output_folder ?? null) !== (local.default_output_folder ?? null)
 
                     if (differs) {
                         setLocalAtConflict(local)

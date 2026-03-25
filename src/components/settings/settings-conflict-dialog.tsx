@@ -17,6 +17,7 @@ export function SettingsConflictDialog({ remote, local, onApplyRemote, onKeepLoc
                 <p className="text-muted-foreground">Image format: <span className="text-foreground">{s.default_image_format}</span></p>
                 <p className="text-muted-foreground">Video format: <span className="text-foreground">{s.default_video_format}</span></p>
                 <p className="text-muted-foreground">Document format: <span className="text-foreground">{s.default_document_format}</span></p>
+                <p className="text-muted-foreground">Output folder: <span className="text-foreground">{s.default_output_folder ?? 'Default'}</span></p>
             </>
         )
     }
