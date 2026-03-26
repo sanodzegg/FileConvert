@@ -19,7 +19,6 @@ const PLANS = [
             'Image editor',
             'Favicon generator',
             'SVG editor',
-            'Last 10 conversion history entries',
         ],
         ctaLabel: 'Get started',
         ctaVariant: 'outline' as const,
@@ -34,7 +33,6 @@ const PLANS = [
         features: [
             'Unlimited conversions',
             'Bulk converter + watch folder mode',
-            'Full conversion history',
             'Image editor',
             'Favicon generator',
             'SVG editor',
