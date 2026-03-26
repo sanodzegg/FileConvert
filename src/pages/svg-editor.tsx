@@ -1,12 +1,13 @@
 import { useState, useMemo } from 'react'
-import { RotateCcw, Check, Copy } from 'lucide-react'
+import { RotateCcw, Check, Copy, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Combobox, ComboboxInput, ComboboxContent, ComboboxList, ComboboxItem } from '@/components/ui/combobox'
 import { cn } from '@/lib/utils'
 import SvgDropzone from '@/components/svg-editor/svg-dropzone'
 import { SvgCodeEditor } from '@/components/svg-editor/SvgCodeEditor'
 import {
-    optimizeSvg, toBase64Uri, toEncodedUri, toMinifiedUri,
+    optimizeSvg, prettifySvg, extractMeta,
+    toBase64Uri, toEncodedUri, toMinifiedUri,
     byteSize, toCodeSnippet, CODE_FORMAT_OPTIONS, type CodeFormat,
 } from '@/components/svg-editor/svg-utils'
 
@@ -30,6 +31,16 @@ function preparePreview(code: string): string {
                 .replace(/\s*\bpreserveAspectRatio="[^"]*"/gi, '')
             return `<svg${cleaned} preserveAspectRatio="xMidYMid meet">`
         })
+}
+
+function downloadSvg(code: string) {
+    const blob = new Blob([code], { type: 'image/svg+xml' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'image.svg'
+    a.click()
+    URL.revokeObjectURL(url)
 }
 
 function CopyButton({ text }: { text: string }) {
@@ -56,7 +67,7 @@ function DataUriRow({ label, value }: { label: string; value: string }) {
                     <CopyButton text={value} />
                 </div>
             </div>
-            <div className="rounded-lg border border-border bg-muted/40 p-2.5 font-mono text-xs text-muted-foreground break-all line-clamp-3 select-all">
+            <div className="pointer-events-none rounded-lg border border-border bg-muted/40 p-2.5 font-mono text-xs text-muted-foreground break-all line-clamp-3 select-all">
                 {value}
             </div>
         </div>
@@ -68,7 +79,6 @@ export default function SvgEditor() {
     const [tab, setTab] = useState<Tab>('preview')
     const [bg, setBg] = useState('white')
     const [codeFormat, setCodeFormat] = useState<CodeFormat>('SVG')
-    const [optimized, setOptimized] = useState(false)
 
     const optimizedCode = useMemo(() => optimizeSvg(code ?? ''), [code])
 
@@ -79,10 +89,12 @@ export default function SvgEditor() {
         return before === 0 ? 0 : Math.round((1 - after / before) * 100)
     }, [code, optimizedCode])
 
-    const activeCode = optimized ? optimizedCode : (code ?? '')
+    const activeCode = code ?? ''
     const previewHtml = useMemo(() => preparePreview(activeCode), [activeCode])
     const displayCode = useMemo(() => toCodeSnippet(activeCode, codeFormat), [activeCode, codeFormat])
     const bgClass = BG_OPTIONS.find(b => b.value === bg)?.class ?? 'bg-white'
+    const meta = useMemo(() => extractMeta(activeCode), [activeCode])
+    const fileSize = useMemo(() => byteSize(activeCode), [activeCode])
 
     if (!code) {
         return (
@@ -107,7 +119,7 @@ export default function SvgEditor() {
                         Upload or paste an SVG to preview, export code snippets, and generate Data URIs.
                     </p>
                 </div>
-                <Button variant="outline" size="sm" onClick={() => { setCode(null); setOptimized(false) }}>
+                <Button variant="outline" size="sm" onClick={() => setCode(null)}>
                     <RotateCcw className="size-3.5 mr-1.5" />
                     New SVG
                 </Button>
@@ -117,22 +129,43 @@ export default function SvgEditor() {
                 {/* Left: CodeMirror editor */}
                 <div className="flex flex-col gap-2 min-h-0">
                     <div className="flex items-center justify-between">
-                        <span className="text-xs text-muted-foreground font-medium">Source</span>
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground font-medium">Source</span>
+                            <span className="text-xs text-muted-foreground">{fileSize}</span>
+                        </div>
                         <div className="flex items-center gap-2">
                             <Button
-                                variant={optimized ? 'default' : 'outline'}
+                                variant="outline"
                                 size="sm"
                                 className="h-7 text-xs"
-                                onClick={() => setOptimized(o => !o)}
+                                onClick={() => setCode(prettifySvg(activeCode))}
                             >
-                                {optimized ? 'Optimized' : savings > 0 ? `Optimize −${savings}%` : 'Optimize'}
+                                Prettify
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-7 text-xs"
+                                onClick={() => setCode(optimizedCode)}
+                                disabled={savings <= 0}
+                            >
+                                {savings > 0 ? `Optimize −${savings}%` : 'Optimize'}
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 shrink-0"
+                                title="Download SVG"
+                                onClick={() => downloadSvg(activeCode)}
+                            >
+                                <Download className="size-3.5" />
                             </Button>
                             <CopyButton text={activeCode} />
                         </div>
                     </div>
                     <SvgCodeEditor
                         value={activeCode}
-                        onChange={v => { setCode(v); setOptimized(false) }}
+                        onChange={setCode}
                     />
                 </div>
 
@@ -157,23 +190,41 @@ export default function SvgEditor() {
 
                     {tab === 'preview' && (
                         <div className="flex flex-col gap-3 flex-1 min-h-0">
-                            <div className="flex items-center gap-2">
-                                {BG_OPTIONS.map(opt => (
-                                    <button
-                                        key={opt.value}
-                                        title={opt.label}
-                                        onClick={() => setBg(opt.value)}
-                                        className={cn(
-                                            'h-6 w-6 rounded-md border-2 transition-colors',
-                                            opt.class,
-                                            bg === opt.value ? 'border-primary' : 'border-border'
-                                        )}
-                                    />
-                                ))}
+                            {/* Meta + bg picker row */}
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    {meta.viewBox && (
+                                        <span className="text-xs text-muted-foreground">
+                                            <span className="text-foreground/50 mr-1">viewBox</span>{meta.viewBox}
+                                        </span>
+                                    )}
+                                    {(meta.width || meta.height) && (
+                                        <span className="text-xs text-muted-foreground">
+                                            <span className="text-foreground/50 mr-1">size</span>
+                                            {meta.width ?? '?'} × {meta.height ?? '?'}
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    {BG_OPTIONS.map(opt => (
+                                        <button
+                                            key={opt.value}
+                                            title={opt.label}
+                                            onClick={() => setBg(opt.value)}
+                                            className={cn(
+                                                'h-6 w-6 rounded-md border-2 transition-colors',
+                                                opt.class,
+                                                bg === opt.value ? 'border-primary' : 'border-border'
+                                            )}
+                                        />
+                                    ))}
+                                </div>
                             </div>
                             <div className={cn('flex-1 rounded-xl relative flex items-center justify-center overflow-hidden', bgClass)}>
-                                <style>{`.svg-preview svg { display: block; max-width: calc(100% - 48px); max-height: calc(100% - 48px); width: auto; height: auto; overflow: visible; }`}</style>
-                                <div className="svg-preview flex items-center justify-center w-full h-full" dangerouslySetInnerHTML={{ __html: previewHtml }} />
+                                <div
+                                    className="svg-preview flex items-center justify-center w-full h-full"
+                                    dangerouslySetInnerHTML={{ __html: previewHtml }}
+                                />
                             </div>
                         </div>
                     )}

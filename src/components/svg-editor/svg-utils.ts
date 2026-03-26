@@ -32,6 +32,51 @@ export function toMinifiedUri(code: string): string {
     return `data:image/svg+xml,${encodeURIComponent(optimizeSvg(code))}`
 }
 
+// ── Prettify ──────────────────────────────────────────────────────────────────
+
+// Indent SVG markup with 2-space indentation
+export function prettifySvg(code: string): string {
+    try {
+        let indent = 0
+        const lines: string[] = []
+        // Split on tag boundaries, preserving the tags
+        const tokens = code
+            .replace(/>\s*</g, '>\n<')  // ensure each tag is on its own line
+            .split('\n')
+            .map(t => t.trim())
+            .filter(Boolean)
+
+        for (const token of tokens) {
+            const isClosing = /^<\//.test(token)
+            const isSelfClosing = /\/>$/.test(token) || /^<!/.test(token) || /^<\?/.test(token)
+            if (isClosing) indent = Math.max(0, indent - 1)
+            lines.push('  '.repeat(indent) + token)
+            if (!isClosing && !isSelfClosing) indent++
+        }
+        return lines.join('\n')
+    } catch {
+        return code
+    }
+}
+
+// ── SVG metadata ──────────────────────────────────────────────────────────────
+
+export interface SvgMeta {
+    width: string | null
+    height: string | null
+    viewBox: string | null
+}
+
+export function extractMeta(code: string): SvgMeta {
+    const attrs = code.match(/<svg([\s\S]*?)>/i)?.[1] ?? ''
+    const get = (attr: string) => attrs.match(new RegExp(`${attr}="([^"]*)"`, 'i'))?.[1] ?? null
+    return {
+        width: get('width'),
+        height: get('height'),
+        viewBox: get('viewBox'),
+    }
+}
+
 // ── Byte size display ─────────────────────────────────────────────────────────
 
 export function byteSize(str: string): string {

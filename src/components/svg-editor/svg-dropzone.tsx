@@ -85,7 +85,11 @@ export default function SvgDropzone({ onSvg }: Props) {
                 <p className="text-sm text-muted-foreground">Or paste SVG code</p>
                 <textarea
                     value={paste}
-                    onChange={e => setPaste(e.target.value)}
+                    onChange={e => {
+                        const val = e.target.value
+                        setPaste(val)
+                        if (isValidSvg(val.trim())) onSvg(val.trim())
+                    }}
                     placeholder="<svg xmlns=..."
                     rows={5}
                     className="w-full rounded-xl border border-border bg-background text-sm text-foreground font-mono p-3 resize-none focus:outline-none focus:border-primary transition-colors"

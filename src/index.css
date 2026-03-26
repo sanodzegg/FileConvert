@@ -191,4 +191,13 @@
   button {
     @apply cursor-pointer!;
   }
+
+  .svg-preview svg {
+    display: block;
+    max-width: calc(100% - 48px);
+    max-height: calc(100% - 48px);
+    width: auto;
+    height: auto;
+    overflow: visible;
+  }
 }

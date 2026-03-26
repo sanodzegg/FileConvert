@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef } from 'react'
 import { EditorView, ViewUpdate, keymap, lineNumbers, highlightActiveLine } from '@codemirror/view'
 import { EditorState } from '@codemirror/state'
 import { xml } from '@codemirror/lang-xml'
@@ -45,7 +45,6 @@ const editorTheme = EditorView.theme({
         padding: '0 8px',
         fontSize: '11px',
     },
-    // XML syntax colors
     '.cm-tag': { color: 'oklch(0.78 0.14 300)' },
     '.cm-attribute': { color: 'oklch(0.72 0.10 220)' },
     '.cm-string': { color: 'oklch(0.75 0.15 160)' },
@@ -53,46 +52,21 @@ const editorTheme = EditorView.theme({
     '.cm-comment': { color: 'var(--muted-foreground)', fontStyle: 'italic' },
 }, { dark: true })
 
-// ── Hover extension ───────────────────────────────────────────────────────────
-
-function hoverExtension(onHoverLine: (line: number | null) => void) {
-    return EditorView.domEventHandlers({
-        mousemove(event, view) {
-            const pos = view.posAtCoords({ x: event.clientX, y: event.clientY })
-            if (pos == null) { onHoverLine(null); return }
-            const line = view.state.doc.lineAt(pos)
-            onHoverLine(line.number - 1) // convert to 0-based
-        },
-        mouseleave() {
-            onHoverLine(null)
-        },
-    })
-}
-
 // ── Component ─────────────────────────────────────────────────────────────────
 
 interface Props {
     value: string
     onChange: (value: string) => void
-    onHoverLine?: (line: number | null) => void
     readOnly?: boolean
 }
 
-export function SvgCodeEditor({ value, onChange, onHoverLine, readOnly = false }: Props) {
+export function SvgCodeEditor({ value, onChange, readOnly = false }: Props) {
     const containerRef = useRef<HTMLDivElement>(null)
     const viewRef = useRef<EditorView | null>(null)
-    // Use refs for callbacks so the editor never needs to be recreated
     const onChangeRef = useRef(onChange)
-    const onHoverLineRef = useRef(onHoverLine)
-    // Flag to suppress onChange during programmatic updates
     const isProgrammatic = useRef(false)
 
     onChangeRef.current = onChange
-    onHoverLineRef.current = onHoverLine
-
-    const stableHover = useCallback((line: number | null) => {
-        onHoverLineRef.current?.(line)
-    }, [])
 
     // Create editor once on mount
     useEffect(() => {
@@ -107,7 +81,6 @@ export function SvgCodeEditor({ value, onChange, onHoverLine, readOnly = false }
                 highlightActiveLine(),
                 xml(),
                 editorTheme,
-                hoverExtension(stableHover),
                 EditorView.updateListener.of((update: ViewUpdate) => {
                     if (update.docChanged && !isProgrammatic.current) {
                         onChangeRef.current(update.state.doc.toString())
