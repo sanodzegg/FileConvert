@@ -14,7 +14,18 @@
     "postinstall": "electron-builder install-app-deps && node node_modules/ffmpeg-static/install.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["file-converter", "image-converter", "video-converter", "media-tools", "electron", "desktop-app", "local-first", "image-editor", "favicon-generator", "svg-editor"],
+  "keywords": [
+    "file-converter",
+    "image-converter",
+    "video-converter",
+    "media-tools",
+    "electron",
+    "desktop-app",
+    "local-first",
+    "image-editor",
+    "favicon-generator",
+    "svg-editor"
+  ],
   "author": "",
   "license": "ISC",
   "build": {
@@ -99,6 +110,7 @@
     "pdfkit": "^0.18.0",
     "playwright-core": "^1.58.2",
     "react": "^19.2.4",
+    "react-colorful": "^5.6.1",
     "react-dom": "^19.2.4",
     "react-router-dom": "^7.13.1",
     "readable-stream": "^4.7.0",

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
+import { ColorPicker } from '@/components/ui/color-picker'
 import { Trash2, Type, Pen, Square, ArrowRight, Plus, Minus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { TextOverlay } from '../layers/use-text-overlays'
@@ -25,7 +26,6 @@ interface Props {
   onDrawWidth: (w: number) => void
 }
 
-const DRAW_COLORS = ['#ffffff', '#000000', '#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#a855f7']
 
 export function TabOverlay({
   mode, onModeChange,
@@ -126,12 +126,9 @@ export function TabOverlay({
                   }}
                   className="w-16 rounded-lg border border-border bg-secondary/20 px-2 py-1 text-xs text-foreground tabular-nums outline-none focus:border-primary text-center"
                 />
-                <input
-                  type="color"
-                  value={selected.color}
-                  onChange={e => onUpdateText(selected.id, { color: e.target.value })}
-                  className="w-7 h-7 rounded cursor-pointer border border-border bg-transparent"
-                  title="Text color"
+                <ColorPicker
+                  value={selected.color.length === 7 ? selected.color + 'ff' : selected.color}
+                  onChange={c => onUpdateText(selected.id, { color: c.slice(0, 7) })}
                 />
               </div>
             </div>
@@ -163,26 +160,10 @@ export function TabOverlay({
 
           <div>
             <p className="text-xs font-medium text-muted-foreground mb-2">Color</p>
-            <div className="flex flex-wrap gap-1.5">
-              {DRAW_COLORS.map(c => (
-                <button
-                  key={c}
-                  onClick={() => onDrawColor(c)}
-                  style={{ backgroundColor: c }}
-                  className={cn(
-                    'w-6 h-6 rounded-full border-2 cursor-pointer transition-transform hover:scale-110',
-                    drawColor === c ? 'border-primary scale-110' : 'border-border'
-                  )}
-                />
-              ))}
-              <input
-                type="color"
-                value={drawColor}
-                onChange={e => onDrawColor(e.target.value)}
-                className="w-6 h-6 rounded-full cursor-pointer border border-border bg-transparent"
-                title="Custom color"
-              />
-            </div>
+            <ColorPicker
+              value={drawColor.length === 7 ? drawColor + 'ff' : drawColor}
+              onChange={c => onDrawColor(c.slice(0, 7))}
+            />
           </div>
 
           <div className="flex items-center gap-2">
