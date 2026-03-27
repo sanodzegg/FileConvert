@@ -75,8 +75,18 @@ electron/
 - Per-file convert button + "Convert All"
 - Active conversion shown with spinner + primary highlight on the converting row
 - Converted files shown in results section with download + bulk ZIP download
+- Bulk ZIP download shows spinner + disabled state while zipping (`isZipping` state)
 - Conversion stats: count, % saved, output size, progress bar
 - Suspicious savings tooltip (explains same-format re-encode or unusually high savings)
+- Duplicate file detection in dropbox — shows "N duplicate file(s) skipped" for 3s, computed client-side by comparing `name-size-lastModified` keys against existing store files
+- Drag highlight only clears on true zone exit — `dragLeave` checks `relatedTarget` to ignore child element transitions
+- Settings icon on file row is yellow only when file has meaningful customization: width/height set, quality differs from default, or keepMetadata is explicitly false. Opening and saving without changes does not mark as customized.
+- `isConverting` in file list checks `convertingFiles.size > 0` (not count comparison) — reliable during single-file conversions which reset `convertingTotal` to 1
+- `startConversion` clears `convertedFiles: {}` — prevents previous batch results bleeding into a new batch
+- `convertFile` in `conversionService.ts` guards with `convertingFiles.has(fileKey(file))` at the top — prevents double-conversion race when Convert All is triggered mid-conversion
+- `IMAGE_EXTS` in `file.tsx` derives from `IMAGE_INPUT_EXTENSIONS` exported by `imageEngine.ts` — stays in sync automatically
+- `TooltipContent` must be a sibling of `TooltipTrigger`, not nested inside it — affects all tooltip buttons in the file row
+- File settings dialog syncs local state from store on open (`syncFromStore()` called in `onOpenChange`) — prevents stale state from cancelled sessions
 
 ### Bulk Converter
 - Pick a folder → recursively scans for images
@@ -239,7 +249,7 @@ Heavy components also lazy-loaded:
 
 Heavy libraries dynamically imported at call-site:
 - `JSZip` — dynamic import inside `downloadAll` in `converted.tsx` and `favicon-results.tsx`
-- `svgo` — dynamic import inside `optimizeSvg` in `svg-utils.ts`
+- `svgo` — dynamic import inside `optimizeSvg` in `svg-utils.ts` — must import from `svgo/browser` (not `svgo`) to avoid pulling in Node built-ins (`os`, `fs`, `path`) via `svgo-node.js`
 
 Because `optimizeSvg` is async, `toMinifiedUri` and `toCodeSnippet` are also async. In `svg-editor.tsx`, any value derived from these uses `useEffect` + `useState` instead of `useMemo`.
 
@@ -254,3 +264,4 @@ Named export lazy pattern: `lazy(() => import('...').then(m => ({ default: m.Nam
 - Commit messages: single line, no body, no bullet points, no co-author trailer
 - shadcn components: never overwrite existing files on install
 - `TooltipTrigger` renders as an inline element by default — add `flex-1 min-w-0` directly to it (not a child span) when truncation inside a flex row is needed
+- Vite build uses `manualChunks` to split `@supabase` → `supabase`, `@base-ui`+`@floating-ui` → `ui-vendor`, `react`+`react-dom`+`react-router` → `react-vendor`. App entry chunk is ~68 KB.

@@ -2,7 +2,7 @@
 
 export async function optimizeSvg(code: string): Promise<string> {
     try {
-        const { optimize } = await import('svgo')
+        const { optimize } = await import('svgo/browser')
         const result = optimize(code, { plugins: ['preset-default'] })
         return result.data
     } catch {
