@@ -66,7 +66,7 @@ export default function Pricing() {
     const [videoReady, setVideoReady] = useState(false)
 
     return (
-        <section className="relative overflow-hidden">
+        <section className="relative overflow-hidden min-h-[calc(100vh-var(--nav-height))]">
             <div className='section py-8'>
                 <video
                     src={pricingBg}

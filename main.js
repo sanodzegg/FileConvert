@@ -13,7 +13,7 @@ let mainWindow = null
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1280,
-    height: 800,
+    height: 820,
     icon: path.join(__dirname, 'build-assets/icon.icns'),
     webPreferences: {
       devTools: isDev,

@@ -20,8 +20,8 @@ const links = [
 
 export default function Navigation() {
     return (
-        <section className="border-b border-b-gray-200 dark:border-b-gray-50/10">
-            <div className="flex items-center justify-between py-2.5 max-w-5xl mx-auto px-10">
+        <section className="flex border-b border-b-gray-200 dark:border-b-gray-50/10 h-(--nav-height)">
+            <div className="flex items-center justify-between py-2.5 max-w-5xl mx-auto w-full px-10">
                 <NavLink to={'/'} className="flex items-center justify-center gap-x-1 shrink-0">
                     <img src={LogoLight} alt="Cone logo" className="select-none pointer-events-none h-8 w-8 dark:hidden" />
                     <img src={LogoDark} alt="Cone logo" className="select-none pointer-events-none h-8 w-8 hidden dark:block" />
