@@ -24,26 +24,26 @@ export function SettingsConflictDialog({ remote, local, onApplyRemote, onKeepLoc
 
     return (
         <Dialog open>
-            <DialogContent>
+            <DialogContent className="2xl:max-w-lg">
                 <DialogHeader>
-                    <DialogTitle className={'font-body'}>Settings conflict</DialogTitle>
-                    <DialogDescription>
+                    <DialogTitle className={'font-body 2xl:text-xl'}>Settings conflict</DialogTitle>
+                    <DialogDescription className="2xl:text-base">
                         Your account has different settings than what's saved locally. Which would you like to use?
                     </DialogDescription>
                 </DialogHeader>
-                <div className="grid grid-cols-2 gap-3 mt-2 mb-4">
-                    <div className="rounded-xl border border-border p-3 space-y-1 text-sm">
+                <div className="grid grid-cols-2 gap-3 2xl:gap-4 mt-2 mb-4">
+                    <div className="rounded-xl border border-border p-3 2xl:p-4 space-y-1 text-sm 2xl:text-base">
                         <p className="font-medium text-primary mb-2">Local settings</p>
                         <SettingsBlock s={local} />
                     </div>
-                    <div className="rounded-xl border border-border p-3 space-y-1 text-sm">
+                    <div className="rounded-xl border border-border p-3 2xl:p-4 space-y-1 text-sm 2xl:text-base">
                         <p className="font-medium text-primary mb-2">Account settings</p>
                         <SettingsBlock s={remote} />
                     </div>
                 </div>
                 <div className="flex gap-2 justify-end">
-                    <Button variant="outline" onClick={onKeepLocal}>Keep local</Button>
-                    <Button onClick={onApplyRemote}>Use account settings</Button>
+                    <Button variant="outline" className="2xl:text-base 2xl:h-11" onClick={onKeepLocal}>Keep local</Button>
+                    <Button className="2xl:text-base 2xl:h-11" onClick={onApplyRemote}>Use account settings</Button>
                 </div>
             </DialogContent>
         </Dialog>
