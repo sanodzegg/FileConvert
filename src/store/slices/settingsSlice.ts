@@ -29,6 +29,8 @@ export const createSettingsSlice: StateCreator<
   defaultOutputFolder: null,
   pendingEditorFile: null,
   conversionRatios: {},
+  autoDownloadEnabled: false,
+  autoDownloadFolder: null,
   setQuality: (quality) => set({ quality }),
   setImageQuality: (imageQuality) => set({ imageQuality }),
   setDefaultImageFormat: (defaultImageFormat) => set({ defaultImageFormat }),
@@ -39,4 +41,6 @@ export const createSettingsSlice: StateCreator<
   updateConversionRatio: (key, samples) => set((state) => ({
     conversionRatios: { ...state.conversionRatios, [key]: samples },
   })),
+  setAutoDownloadEnabled: (autoDownloadEnabled) => set({ autoDownloadEnabled }),
+  setAutoDownloadFolder: (autoDownloadFolder) => set({ autoDownloadFolder }),
 })

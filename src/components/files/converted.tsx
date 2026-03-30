@@ -1,9 +1,9 @@
 import { useConvertStore } from "@/store/useConvertStore"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import type { ConvertedFile } from "@/types"
 import { Button } from "../ui/button"
-import { Download, Loader2, RefreshCcw } from "lucide-react"
-import { formatBytes } from "@/utils/fileUtils"
+import { Check, Download, Loader2, RefreshCcw } from "lucide-react"
+import { formatBytes, fileKey } from "@/utils/fileUtils"
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip"
 import ConversionStats from "./conversion-stats"
 
@@ -14,20 +14,49 @@ export default function ConvertedFiles() {
     const convertingTotal = useConvertStore(s => s.convertingTotal)
     const totalInputSize = useConvertStore(s => s.totalInputSize)
     const totalOutputSize = useConvertStore(s => s.totalOutputSize)
-    const resetAppState = useConvertStore(s => s.resetConversion);
+    const resetAppState = useConvertStore(s => s.resetConversion)
+    const autoDownloadEnabled = useConvertStore(s => s.autoDownloadEnabled)
+    const autoDownloadFolder = useConvertStore(s => s.autoDownloadFolder)
+    const markAutoSaved = useConvertStore(s => s.markAutoSaved)
 
     const [snapshot, setSnapshot] = useState<ConvertedFile[]>([])
     const [isZipping, setIsZipping] = useState(false)
 
+    // Track which keys we've already auto-saved to avoid double-saving
+    const autoSavedKeys = useRef<Set<string>>(new Set())
+
     useEffect(() => {
         const incoming = Object.values(convertedFiles)
         if (incoming.length > 0) setSnapshot(incoming)
-        else setSnapshot([])
+        else {
+            setSnapshot([])
+            autoSavedKeys.current.clear()
+        }
     }, [convertedFiles])
 
+    // Auto-download newly converted files when enabled + folder set
+    useEffect(() => {
+        if (!autoDownloadEnabled || !autoDownloadFolder) return
+        const entries = Object.entries(convertedFiles)
+        for (const [key, f] of entries) {
+            if (autoSavedKeys.current.has(key)) continue
+            autoSavedKeys.current.add(key)
+            f.blob.arrayBuffer().then(buf => {
+                window.electron.saveConvertedFile(autoDownloadFolder, f.name, buf)
+                    .then(() => markAutoSaved(key))
+                    .catch(() => {
+                        // remove from saved set so it can be retried if the user re-saves manually
+                        autoSavedKeys.current.delete(key)
+                    })
+            })
+        }
+    }, [convertedFiles, autoDownloadEnabled, autoDownloadFolder])
+
+    const convertingFiles = useConvertStore(s => s.convertingFiles)
     const failedEntries = Object.entries(failedFiles)
     const doneCount = convertedCount + failedEntries.length
     const isDone = convertingTotal > 0 && doneCount >= convertingTotal
+    const isConverting = convertingFiles.size > 0 || (convertingTotal > 0 && !isDone)
     const progress = convertingTotal > 0 ? (doneCount / convertingTotal) * 100 : 0
     const quality = useConvertStore(s => s.quality)
     const savedPercent = isDone && snapshot.length > 0 && totalInputSize > 0
@@ -83,12 +112,12 @@ export default function ConvertedFiles() {
                     </Button>
                     <Tooltip>
                         <TooltipTrigger>
-                            <Button onClick={resetAppState} variant={'secondary'} className={'group p-2.5! h-full!'}>
+                            <Button onClick={resetAppState} disabled={isConverting} variant={'secondary'} className={'group p-2.5! h-full!'}>
                                 <RefreshCcw className="size-5 2xl:size-6 group-hover:animate-spin-once" />
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                            <p className="text-sm 2xl:text-base font-light text-accent">Refresh Converting</p>
+                            <p className="text-sm 2xl:text-base font-light text-accent">{isConverting ? 'Wait for conversions to finish' : 'Start over'}</p>
                         </TooltipContent>
                     </Tooltip>
                 </div>
@@ -111,10 +140,19 @@ export default function ConvertedFiles() {
                                     </span>
                                 )}
                             </div>
-                            <Button variant="secondary" onClick={() => handleDownload(f.blob, f.name)} className="text-xs 2xl:text-sm text-primary ml-2 shrink-0">
-                                <Download className="size-3.5 2xl:size-4 mr-1" />
-                                Download
-                            </Button>
+                            <div className="flex items-center gap-2 ml-2 shrink-0">
+                                {f.autoSaved ? (
+                                    <span className="flex items-center gap-1 text-xs 2xl:text-sm font-medium px-2.5 py-1.5 rounded-xl bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20">
+                                        <Check className="size-3.5" />
+                                        Saved
+                                    </span>
+                                ) : (
+                                    <Button variant="secondary" onClick={() => handleDownload(f.blob, f.name)} className="text-xs 2xl:text-sm text-primary">
+                                        <Download className="size-3.5 2xl:size-4 mr-1" />
+                                        Download
+                                    </Button>
+                                )}
+                            </div>
                         </li>
                     ))}
                 </ul>

@@ -39,6 +39,10 @@ contextBridge.exposeInMainWorld('electron', {
     return () => ipcRenderer.removeListener('website-pdf-waiting', handler)
   },
 
+  // Auto-download
+  pickDownloadFolder: () => ipcRenderer.invoke('pick-download-folder'),
+  saveConvertedFile: (folderPath, fileName, buffer) => ipcRenderer.invoke('save-converted-file', folderPath, fileName, buffer),
+
   // Tray / notifications
   showNotification: (title, body) => ipcRenderer.send('show-notification', { title, body }),
 

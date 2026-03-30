@@ -4,10 +4,12 @@ import { useConvertStore } from "@/store/useConvertStore"
 import { fileKey } from "@/utils/fileUtils"
 import { convertAll } from "@/services/conversionService"
 import { useConversionCountContext } from "@/lib/ConversionCountContext"
+import { useAuth } from "@/lib/useAuth"
 
 export default function FileList() {
     const { files, fileSettings, quality, imageQuality, convertedCount, convertingTotal, convertingFiles, convertedFiles, failedFiles, setConvertedFile, setFailedFile, markFileConverting, unmarkFileConverting, startConversion, removeFile } = useConvertStore()
     const { onConversionSuccess, onBatchComplete } = useConversionCountContext()
+    const { plan } = useAuth()
 
     const failedCount = Object.keys(failedFiles).length
     const isConverting = convertingFiles.size > 0 || (convertingTotal > 0 && (convertedCount + failedCount) < convertingTotal)
@@ -26,6 +28,7 @@ export default function FileList() {
             markFileConverting,
             unmarkFileConverting,
             removeFile,
+            plan,
             onConversionSuccess,
             onBatchComplete,
         })

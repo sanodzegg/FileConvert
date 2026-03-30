@@ -1,8 +1,11 @@
 import { useState } from 'react'
-import { Clock, Zap, Star } from 'lucide-react'
+import { Clock, Zap, Star, Timer } from 'lucide-react'
 import { PricingCard } from '@/components/pricing/pricing-card'
 import { useAuth } from '@/lib/useAuth'
-import pricingBg from '@/assets/pricing-bg.webm'
+import { isTrialExhausted } from '@/lib/useConversionCount'
+import pricingBgDark from '@/assets/pricing-bg.webm'
+import pricingBgLight from '@/assets/pricing-bg-light.webm'
+import { useTheme } from '@/components/theme/theme-provider'
 
 type Interval = 'monthly' | 'annual'
 
@@ -10,18 +13,36 @@ const PLANS = [
     {
         id: 'trial',
         icon: Clock,
-        title: 'Basic',
+        title: 'Trial',
         description: 'Free to get started',
         price: 0,
         features: [
-            '500 image conversions',
-            '500 document conversions',
-            '100 video conversions',
+            '200 image conversions',
+            '150 document conversions',
+            '50 video conversions',
             'Image editor',
             'Favicon generator',
             'SVG editor',
         ],
         ctaLabel: 'Get started',
+        ctaVariant: 'outline' as const,
+    },
+    {
+        id: 'limited',
+        icon: Timer,
+        title: 'Limited',
+        description: 'Free with daily limits',
+        price: 0,
+        features: [
+            '20 image conversions / day',
+            '20 document conversions / day',
+            '10 video conversions / day',
+            'Resets every 24 hours',
+            'Image editor',
+            'Favicon generator',
+            'SVG editor',
+        ],
+        ctaLabel: 'Upgrade to Pro',
         ctaVariant: 'outline' as const,
     },
     {
@@ -61,10 +82,15 @@ const PLANS = [
 ]
 
 export default function Pricing() {
+    const { theme } = useTheme();
     const { plan } = useAuth()
     const [interval, setInterval] = useState<Interval>('annual')
     const [videoReady, setVideoReady] = useState(false)
+    const trialExhausted = plan === 'limited' || (plan === 'trial' && isTrialExhausted())
 
+    const pricingBg = theme === 'dark' ? pricingBgDark : pricingBgLight
+
+    console.log(pricingBg)
     return (
         <section className="relative overflow-hidden min-h-[calc(100vh-var(--nav-height))]">
             <div className='section py-8 2xl:py-12'>
@@ -75,7 +101,7 @@ export default function Pricing() {
                     muted
                     playsInline
                     onCanPlay={() => setVideoReady(true)}
-                    className="absolute inset-0 w-full h-full object-cover pointer-events-none hidden dark:block transition-opacity duration-700"
+                    className="absolute inset-0 w-full h-full object-cover pointer-events-none transition-opacity duration-700"
                     style={{ opacity: videoReady ? .7 : 0 }}
                 />
                 <div className="relative z-10 mb-10 2xl:mb-14 text-center">
@@ -83,9 +109,10 @@ export default function Pricing() {
                     <p className="text-sm 2xl:text-base text-muted-foreground">No subscriptions required. Start free, upgrade when you need more.</p>
                 </div>
                 <div className="relative z-10 grid grid-cols-3 gap-4 2xl:gap-6 items-center">
-                    {PLANS.map(p => {
+                    {PLANS.filter(p => trialExhausted ? p.id !== 'trial' : p.id !== 'limited').map(p => {
                         const isCurrent =
-                            (p.id === 'trial' && plan === 'trial') ||
+                            (p.id === 'limited' && trialExhausted) ||
+                            (p.id === 'trial' && plan === 'trial' && !trialExhausted) ||
                             (p.id === 'pro' && (plan === 'monthly' || plan === 'annual')) ||
                             (p.id === 'lifetime' && plan === 'lifetime')
                         const badge = isCurrent ? 'current' : p.id === 'pro' ? 'popular' : p.id === 'lifetime' ? 'best-value' : undefined

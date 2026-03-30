@@ -17,6 +17,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip"
 import { convertSingle } from "@/services/conversionService"
 import { useNavigate } from "react-router-dom"
 import { useConversionCountContext } from "@/lib/ConversionCountContext"
+import { useAuth } from "@/lib/useAuth"
 import { IMAGE_INPUT_EXTENSIONS } from "@/engines/imageEngine"
 
 const IMAGE_EXTS = new Set(IMAGE_INPUT_EXTENSIONS)
@@ -41,6 +42,7 @@ export default function File({ data }: { data: File }) {
     const convertingFiles = useConvertStore(s => s.convertingFiles)
     const { quality, imageQuality, fileSettings, convertedFiles, convertingFiles: convertingFilesMap, startConversion, setConvertedFile, setFailedFile, markFileConverting, unmarkFileConverting, conversionRatios } = useConvertStore()
     const { onConversionSuccess, onBatchComplete } = useConversionCountContext()
+    const { plan } = useAuth()
     const navigate = useNavigate()
 
     const isImage = ext ? IMAGE_EXTS.has(ext.toLowerCase()) : false
@@ -54,7 +56,7 @@ export default function File({ data }: { data: File }) {
     const learned = ext && targetFormat ? isLearnedEstimate(ext, targetFormat, conversionRatios) : false
 
     const handleConvertSingle = () => convertSingle(data, {
-        quality, imageQuality, fileSettings, convertedFiles, convertingFiles: convertingFilesMap, startConversion, setConvertedFile, setFailedFile, markFileConverting, unmarkFileConverting, removeFile, onConversionSuccess, onBatchComplete,
+        quality, imageQuality, fileSettings, convertedFiles, convertingFiles: convertingFilesMap, startConversion, setConvertedFile, setFailedFile, markFileConverting, unmarkFileConverting, removeFile, plan, onConversionSuccess, onBatchComplete,
     })
 
     const handleEditInEditor = () => {

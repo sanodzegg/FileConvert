@@ -17,6 +17,7 @@ export interface ConvertedFile {
   inputSize: number
   blob: Blob
   customized: boolean
+  autoSaved?: boolean
 }
 
 export interface ConversionOptions {
@@ -56,6 +57,7 @@ export interface ConversionSliceActions {
   markFileConverting: (file: File) => void
   unmarkFileConverting: (file: File) => void
   resetConversion: () => void
+  markAutoSaved: (key: string) => void
 }
 
 export interface SettingsSliceState {
@@ -67,6 +69,8 @@ export interface SettingsSliceState {
   defaultOutputFolder: string | null
   pendingEditorFile: File | null
   conversionRatios: Record<string, number[]>
+  autoDownloadEnabled: boolean
+  autoDownloadFolder: string | null
 }
 
 export interface SettingsSliceActions {
@@ -78,4 +82,6 @@ export interface SettingsSliceActions {
   setDefaultOutputFolder: (folder: string | null) => void
   setPendingEditorFile: (file: File | null) => void
   updateConversionRatio: (key: string, samples: number[]) => void
+  setAutoDownloadEnabled: (enabled: boolean) => void
+  setAutoDownloadFolder: (folder: string | null) => void
 }

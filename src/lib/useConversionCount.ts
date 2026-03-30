@@ -11,14 +11,65 @@ export interface ConversionCounts {
 }
 
 const STORAGE_KEY = 'cone_conversion_counts'
+const DAILY_STORAGE_KEY = 'cone_daily_counts'
 
 const LIMITS: ConversionCounts = {
-    image: 500,
-    document: 500,
-    video: 100,
+    image: 200,
+    document: 150,
+    video: 50,
+}
+
+const DAILY_LIMITS: ConversionCounts = {
+    image: 20,
+    document: 20,
+    video: 10,
 }
 
 export const TRIAL_LIMITS = LIMITS
+export const LIMITED_DAILY_LIMITS = DAILY_LIMITS
+
+interface DailyCounts {
+    image: number
+    document: number
+    video: number
+    resetAt: number // epoch ms when the window expires
+}
+
+function getDailyLocal(): DailyCounts {
+    try {
+        const raw = localStorage.getItem(DAILY_STORAGE_KEY)
+        if (!raw) return { image: 0, document: 0, video: 0, resetAt: Date.now() + 24 * 60 * 60 * 1000 }
+        const parsed = JSON.parse(raw) as DailyCounts
+        if (Date.now() > parsed.resetAt) {
+            const fresh: DailyCounts = { image: 0, document: 0, video: 0, resetAt: Date.now() + 24 * 60 * 60 * 1000 }
+            localStorage.setItem(DAILY_STORAGE_KEY, JSON.stringify(fresh))
+            return fresh
+        }
+        return parsed
+    } catch {
+        return { image: 0, document: 0, video: 0, resetAt: Date.now() + 24 * 60 * 60 * 1000 }
+    }
+}
+
+function setDailyLocal(counts: DailyCounts) {
+    localStorage.setItem(DAILY_STORAGE_KEY, JSON.stringify(counts))
+}
+
+export function incrementDailyCount(engine: EngineType) {
+    const counts = getDailyLocal()
+    if (counts[engine] >= DAILY_LIMITS[engine]) return
+    counts[engine] = (counts[engine] ?? 0) + 1
+    setDailyLocal(counts)
+}
+
+export function getDailyCounts(): DailyCounts {
+    return getDailyLocal()
+}
+
+export function isTrialExhausted(): boolean {
+    const counts = getLocal()
+    return counts.image >= LIMITS.image && counts.document >= LIMITS.document && counts.video >= LIMITS.video
+}
 
 function getLocal(): ConversionCounts {
     try {
@@ -41,6 +92,11 @@ function setLocal(counts: ConversionCounts) {
 
 export function incrementLocalCount(engine: EngineType) {
     const counts = getLocal()
+    if (counts[engine] >= LIMITS[engine]) {
+        // Past trial limit — only track daily window, don't keep inflating the total
+        incrementDailyCount(engine)
+        return
+    }
     counts[engine] = (counts[engine] ?? 0) + 1
     setLocal(counts)
 }
@@ -50,9 +106,16 @@ export function getLocalCounts(): ConversionCounts {
 }
 
 export function isAtLimit(engine: EngineType, plan: string): boolean {
+    if (plan === 'limited') {
+        const daily = getDailyLocal()
+        return daily[engine] >= DAILY_LIMITS[engine]
+    }
     if (plan !== 'trial') return false
     const counts = getLocal()
-    return counts[engine] >= LIMITS[engine]
+    if (counts[engine] < LIMITS[engine]) return false
+    // Trial limit hit — fall through to daily window
+    const daily = getDailyLocal()
+    return daily[engine] >= DAILY_LIMITS[engine]
 }
 
 export function useConversionCount(user: User | null, plan: string) {

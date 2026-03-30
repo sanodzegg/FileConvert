@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 
 export const PLAN_LABEL: Record<string, string> = {
     trial: 'Trial',
+    limited: 'Limited',
     monthly: 'Pro — Monthly',
     annual: 'Pro — Annual',
     lifetime: 'Lifetime',
@@ -18,7 +19,7 @@ interface AccountCardProps {
 
 export function AccountCard({ user, plan }: AccountCardProps) {
     const navigate = useNavigate()
-    const isTrial = plan === 'trial'
+    const isTrial = plan === 'trial' || plan === 'limited'
 
     async function handleSignOut() {
         await supabase.auth.signOut()

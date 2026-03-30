@@ -21,7 +21,7 @@ declare interface Window {
   electron: {
     convert: (buffer: ArrayBuffer, targetFormat: string, quality?: number, imageOptions?: { width?: number; height?: number; fit?: string; keepMetadata?: boolean }) => Promise<Uint8Array>
     convertDocument: (buffer: ArrayBuffer, targetFormat: string, sourceFormat: string) => Promise<Uint8Array>
-    convertVideo: (buffer: ArrayBuffer, sourceExt: string, targetFormat: string) => Promise<Uint8Array>
+    convertVideo: (buffer: ArrayBuffer, sourceExt: string, targetFormat: string, videoOptions?: { width?: number; height?: number; fit?: string }) => Promise<Uint8Array>
     convertAudio: (buffer: ArrayBuffer, sourceExt: string, targetFormat: string) => Promise<Uint8Array>
     convertFavicon: (buffer: ArrayBuffer) => Promise<{ ico: ArrayBuffer; pngs: { size: number; buf: ArrayBuffer }[] }>
 
@@ -61,6 +61,10 @@ declare interface Window {
     screenshotCapture: (opts: { url: string; format: 'png' | 'jpg' | 'webp'; viewportWidth: number; userAgent?: string }) => Promise<{ preview: string; buffer: number[]; format: string }>
     screenshotSave: (opts: { buffer: number[]; format: string; url: string }) => Promise<{ canceled: boolean; filePath?: string }>
     onScreenshotBrowserStatus: (cb: (data: { status: 'downloading' | 'ready' | 'error'; error?: string }) => void) => () => void
+
+    // Auto-download
+    pickDownloadFolder: () => Promise<string | null>
+    saveConvertedFile: (folderPath: string, fileName: string, buffer: ArrayBuffer) => Promise<string>
 
     // Tray / notifications
     showNotification: (title: string, body: string) => void

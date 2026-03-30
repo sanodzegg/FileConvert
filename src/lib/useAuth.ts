@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { supabase } from './supabase'
 
-export type Plan = 'trial' | 'monthly' | 'annual' | 'lifetime'
+export type Plan = 'trial' | 'limited' | 'monthly' | 'annual' | 'lifetime'
 
 export function useAuth() {
     const [user, setUser] = useState<User | null>(null)
@@ -36,5 +36,5 @@ export function useAuth() {
         return () => subscription.unsubscribe()
     }, [])
 
-    return { user, plan, loading }
+    return { user, plan, setPlan, loading }
 }

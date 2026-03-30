@@ -5,6 +5,7 @@ const { registerBulkConvertHandlers } = require('./electron/bulk-convert')
 const { registerScreenshotHandlers } = require('./electron/screenshot')
 const { registerPdfToolsHandlers } = require('./electron/pdf-tools')
 const { registerWebsitePdfHandlers } = require('./electron/website-pdf')
+const { registerFileSaveHandlers } = require('./electron/file-save')
 
 const isDev = !app.isPackaged
 
@@ -50,6 +51,7 @@ app.whenReady().then(() => {
   registerScreenshotHandlers(mainWindow)
   registerPdfToolsHandlers(mainWindow)
   registerWebsitePdfHandlers(mainWindow)
+  registerFileSaveHandlers(mainWindow)
 })
 
 app.on('window-all-closed', () => {

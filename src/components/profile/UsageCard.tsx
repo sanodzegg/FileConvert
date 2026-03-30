@@ -1,7 +1,9 @@
-import { TRIAL_LIMITS } from '@/lib/useConversionCount'
+import { TRIAL_LIMITS, LIMITED_DAILY_LIMITS, getDailyCounts } from '@/lib/useConversionCount'
 import type { ConversionCounts } from '@/lib/useConversionCount'
 import type { Plan } from '@/lib/useAuth'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { useNavigate } from 'react-router-dom'
 
 function UsageBar({ used, limit }: { used: number; limit: number }) {
     const pct = Math.min((used / limit) * 100, 100)
@@ -23,26 +25,48 @@ interface UsageCardProps {
 }
 
 export function UsageCard({ plan, counts }: UsageCardProps) {
-    const isTrial = plan === 'trial'
+    const navigate = useNavigate()
+    const isFreeplan = plan === 'trial' || plan === 'limited'
+    const daily = getDailyCounts()
+
+    const rows: { label: string; used: number; limit: number; isDaily: boolean }[] = isFreeplan ? [
+        plan === 'limited' || counts.image >= TRIAL_LIMITS.image
+            ? { label: 'Images', used: daily.image, limit: LIMITED_DAILY_LIMITS.image, isDaily: true }
+            : { label: 'Images', used: counts.image, limit: TRIAL_LIMITS.image, isDaily: false },
+        plan === 'limited' || counts.document >= TRIAL_LIMITS.document
+            ? { label: 'Documents', used: daily.document, limit: LIMITED_DAILY_LIMITS.document, isDaily: true }
+            : { label: 'Documents', used: counts.document, limit: TRIAL_LIMITS.document, isDaily: false },
+        plan === 'limited' || counts.video >= TRIAL_LIMITS.video
+            ? { label: 'Videos', used: daily.video, limit: LIMITED_DAILY_LIMITS.video, isDaily: true }
+            : { label: 'Videos', used: counts.video, limit: TRIAL_LIMITS.video, isDaily: false },
+    ] : []
+
+    const anyLimited = isFreeplan && rows.some(r => r.isDaily)
 
     return (
         <div className="rounded-2xl border border-border p-5 space-y-3">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Usage</p>
-            {isTrial ? (
-                <div className="space-y-3">
-                    {([
-                        { label: 'Images', used: counts.image, limit: TRIAL_LIMITS.image },
-                        { label: 'Documents', used: counts.document, limit: TRIAL_LIMITS.document },
-                        { label: 'Videos', used: counts.video, limit: TRIAL_LIMITS.video },
-                    ] as const).map(({ label, used, limit }) => (
-                        <div key={label} className="space-y-1">
-                            <div className="flex items-center justify-between">
-                                <p className="text-xs text-muted-foreground">{label}</p>
-                                <p className="text-xs text-foreground">{used} / {limit}</p>
+            {isFreeplan ? (
+                <div className="space-y-4">
+                    <div className="space-y-3">
+                        {rows.map(({ label, used, limit, isDaily }) => (
+                            <div key={label} className="space-y-1">
+                                <div className="flex items-center justify-between">
+                                    <p className="text-xs text-muted-foreground">{label}</p>
+                                    <p className="text-xs text-foreground">
+                                        {used} / {limit}
+                                        {isDaily && <span className="text-muted-foreground"> today</span>}
+                                    </p>
+                                </div>
+                                <UsageBar used={used} limit={limit} />
                             </div>
-                            <UsageBar used={used} limit={limit} />
-                        </div>
-                    ))}
+                        ))}
+                    </div>
+                    {anyLimited && (
+                        <Button variant="default" className="w-full" onClick={() => navigate('/pricing')}>
+                            Upgrade to Pro
+                        </Button>
+                    )}
                 </div>
             ) : (
                 <div className="space-y-1">

@@ -118,4 +118,16 @@ export const createConversionSlice: StateCreator<
       totalOutputSize: 0,
       convertingFiles: new Set<string>(),
     }),
+
+  markAutoSaved: (key) =>
+    set((state) => {
+      const entry = state.convertedFiles[key]
+      if (!entry) return {}
+      return {
+        convertedFiles: {
+          ...state.convertedFiles,
+          [key]: { ...entry, autoSaved: true },
+        },
+      }
+    }),
 })

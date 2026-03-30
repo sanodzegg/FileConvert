@@ -8,7 +8,8 @@ import { ThemeProvider } from '@/components/theme/theme-provider'
 import Navigation from './components/navigation/navigation'
 import { useAuth } from './lib/useAuth'
 import { useSettingsSync } from './lib/useSettingsSync'
-import { useConversionCount, incrementLocalCount } from './lib/useConversionCount'
+import { useConversionCount, isTrialExhausted } from './lib/useConversionCount'
+import { supabase } from './lib/supabase'
 import { SettingsConflictDialog } from './components/settings/settings-conflict-dialog'
 import { ConversionCountContext, toEngineType } from './lib/ConversionCountContext'
 
@@ -16,15 +17,18 @@ const splash = document.getElementById('splash')
 if (splash) splash.remove();
 
 function App() {
-  const { user, plan } = useAuth()
+  const { user, plan, setPlan } = useAuth()
   const { conflictSettings, localAtConflict, applyRemote, keepLocal } = useSettingsSync(user)
   const { syncCountToServer } = useConversionCount(user, plan)
 
   function onConversionSuccess(engineId: string) {
     const type = toEngineType(engineId)
     if (!type) return
-    incrementLocalCount(type)
     syncCountToServer(type)
+    if (plan === 'trial' && user && isTrialExhausted()) {
+      setPlan('limited')
+      supabase.from('users').update({ plan: 'limited' }).eq('id', user.id)
+    }
   }
 
   function onBatchComplete(successCount: number, totalCount: number) {

@@ -1,6 +1,8 @@
 import { getEngineForFile } from '@/engines/engineRegistry'
 import { fileKey } from '@/utils/fileUtils'
 import type { ConvertStore } from '@/store/useConvertStore'
+import { isAtLimit, isTrialExhausted, incrementLocalCount } from '@/lib/useConversionCount'
+import { toEngineType } from '@/lib/ConversionCountContext'
 
 type ConversionDeps = Pick<
   ConvertStore,
@@ -16,6 +18,7 @@ type ConversionDeps = Pick<
   | 'unmarkFileConverting'
   | 'removeFile'
 > & {
+  plan: string
   onConversionSuccess?: (engineId: string) => void
   onBatchComplete?: (successCount: number, totalCount: number) => void
 }
@@ -31,13 +34,23 @@ export async function convertSingle(file: File, deps: ConversionDeps): Promise<v
 }
 
 async function convertFile(file: File, deps: ConversionDeps): Promise<void> {
-  if (deps.convertingFiles.has(fileKey(file))) return
-
   const engine = getEngineForFile(file)
   if (!engine) {
     deps.setFailedFile(file, 'No engine available for this file type')
     return
   }
+
+  const limitType = toEngineType(engine.id)
+  if (limitType && isAtLimit(limitType, deps.plan)) {
+    const label = limitType.charAt(0).toUpperCase() + limitType.slice(1)
+    const msg = deps.plan === 'limited' || isTrialExhausted()
+      ? `${label} daily limit reached. Try again tomorrow or upgrade to Pro.`
+      : `${label} conversion limit reached. Upgrade to continue.`
+    deps.setFailedFile(file, msg)
+    return
+  }
+  // Reserve the slot immediately so parallel conversions don't all pass the same limit check
+  if (limitType) incrementLocalCount(limitType)
 
   const settings = deps.fileSettings[fileKey(file)]
   const targetFormat = settings?.targetFormat
@@ -63,7 +76,7 @@ async function convertFile(file: File, deps: ConversionDeps): Promise<void> {
     deps.onConversionSuccess?.(engine.id)
   } catch (err) {
     deps.unmarkFileConverting(file)
-    deps.setFailedFile(file, err instanceof Error ? err.message : 'Unknown error')
+    deps.setFailedFile(file, err instanceof Error ? err.message : (err as any)?.message ?? String(err) ?? 'Unknown error')
   }
 }
 

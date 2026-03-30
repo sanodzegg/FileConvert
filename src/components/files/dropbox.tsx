@@ -5,10 +5,16 @@ import { useConvertStore } from "@/store/useConvertStore";
 import { Badge } from "../ui/badge";
 import { cn } from "@/lib/utils";
 import { getAllSupportedExtensions, getExtensionsByGroup } from "@/engines/engineRegistry";
+import { useAuth } from "@/lib/useAuth";
+import { isAtLimit } from "@/lib/useConversionCount";
+import { useNavigate } from "react-router-dom";
 
 export default function Dropbox() {
     const groups = getExtensionsByGroup();
     const [activeGroup, setActiveGroup] = useState(groups[0]?.label ?? '');
+    const { plan } = useAuth();
+    const navigate = useNavigate();
+    const allLimited = isAtLimit('image', plan) && isAtLimit('document', plan) && isAtLimit('video', plan);
 
     const inputRef = useRef<HTMLInputElement>(null);
     const wrapperRef = useRef<HTMLDivElement>(null);
@@ -62,43 +68,47 @@ export default function Dropbox() {
     return (
         <form>
             <input ref={inputRef} multiple onChange={handleInputChange} className="sr-only" type="file" name="userFiles" id="userFiles" accept={getAllSupportedExtensions().map(e => `.${e}`).join(',')} />
-            <div ref={wrapperRef} onDrop={handleDrop} onDragOver={preventDragOver} onDragEnter={handleDragEnter} onDragLeave={handleDragLeave} onDragEnd={handleDragEnd} className="flex flex-col items-center justify-center w-full border border-border hover:border-primary rounded-3xl border-dashed transition-colors cursor-pointer gap-4 [&.dragenter]:bg-accent pt-10 pb-8 2xl:pt-14 2xl:pb-10 2xl:gap-5">
-                <Button onClick={handleClickRedirection} variant="outline" className="w-20 h-20 2xl:w-24 2xl:h-24 border-border hover:border-primary transition-colors">
-                    <Import className="size-10 2xl:size-12 stroke-primary" />
+            <div ref={wrapperRef} onDrop={allLimited ? undefined : handleDrop} onDragOver={allLimited ? undefined : preventDragOver} onDragEnter={allLimited ? undefined : handleDragEnter} onDragLeave={allLimited ? undefined : handleDragLeave} onDragEnd={allLimited ? undefined : handleDragEnd} className={cn("flex flex-col items-center justify-center w-full border rounded-3xl border-dashed transition-colors [&.dragenter]:bg-accent pt-10 pb-8 2xl:pt-14 2xl:pb-10", allLimited ? "border-border cursor-default" : "border-border hover:border-primary cursor-pointer")}>
+                <div className={cn("flex flex-col items-center justify-center w-full gap-4 2xl:gap-5", allLimited && "opacity-60 pointer-events-none")}>
+                    <Button onClick={allLimited ? undefined : handleClickRedirection} variant="outline" className="w-20 h-20 2xl:w-24 2xl:h-24 border-border hover:border-primary transition-colors">
+                        <Import className="size-10 2xl:size-12 stroke-primary" />
+                    </Button>
+
+                    <div className="text-center">
+                        <h2 className="text-2xl 2xl:text-3xl font-body font-semibold text-foreground">Drop files here</h2>
+                        <p className="text-sm 2xl:text-base text-muted-foreground mt-1">{allLimited ? 'All conversion limits reached' : 'or browse from your computer'}</p>
+                    </div>
+
+                    <div className="flex flex-col items-center gap-3 w-full max-w-lg 2xl:max-w-xl px-8">
+                        <div className="flex gap-2" onClick={e => e.stopPropagation()}>
+                            {groups.map(group => (
+                                <button
+                                    key={group.label}
+                                    type="button"
+                                    onClick={() => setActiveGroup(group.label)}
+                                    className={cn(
+                                        'px-4 py-1.5 2xl:px-5 2xl:py-2 rounded-full text-sm 2xl:text-base border transition-colors',
+                                        activeGroup === group.label
+                                            ? 'border-primary text-primary bg-primary/10'
+                                            : 'border-border text-muted-foreground hover:border-primary/50 hover:text-foreground'
+                                    )}
+                                >
+                                    {group.label}
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="flex flex-wrap justify-center gap-1.5 h-24 2xl:h-28 content-start overflow-hidden">
+                            {activeFormats.map(fmt => (
+                                <Badge variant="secondary" key={fmt} className="rounded-sm px-2.5 py-1.5 2xl:p-3 text-sm 2xl:text-base font-light text-primary">{fmt}</Badge>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                <Button onClick={allLimited ? () => navigate('/pricing') : handleClickRedirection} className="bg-primary h-12 w-60 2xl:h-14 2xl:w-72 text-lg 2xl:text-xl" variant="default">
+                    {allLimited ? 'Upgrade to Pro' : 'Browse Files'}
                 </Button>
-
-                <div className="text-center">
-                    <h2 className="text-2xl 2xl:text-3xl font-body font-semibold text-foreground">Drop files here</h2>
-                    <p className="text-sm 2xl:text-base text-muted-foreground mt-1">or browse from your computer</p>
-                </div>
-
-                <div className="flex flex-col items-center gap-3 w-full max-w-lg 2xl:max-w-xl px-8">
-                    <div className="flex gap-2" onClick={e => e.stopPropagation()}>
-                        {groups.map(group => (
-                            <button
-                                key={group.label}
-                                type="button"
-                                onClick={() => setActiveGroup(group.label)}
-                                className={cn(
-                                    'px-4 py-1.5 2xl:px-5 2xl:py-2 rounded-full text-sm 2xl:text-base border transition-colors',
-                                    activeGroup === group.label
-                                        ? 'border-primary text-primary bg-primary/10'
-                                        : 'border-border text-muted-foreground hover:border-primary/50 hover:text-foreground'
-                                )}
-                            >
-                                {group.label}
-                            </button>
-                        ))}
-                    </div>
-
-                    <div className="flex flex-wrap justify-center gap-1.5 h-24 2xl:h-28 content-start overflow-hidden">
-                        {activeFormats.map(fmt => (
-                            <Badge variant="secondary" key={fmt} className="rounded-sm px-2.5 py-1.5 2xl:p-3 text-sm 2xl:text-base font-light text-primary">{fmt}</Badge>
-                        ))}
-                    </div>
-                </div>
-
-                <Button onClick={handleClickRedirection} className="bg-primary h-12 w-60 2xl:h-14 2xl:w-72 text-lg 2xl:text-xl" variant="default">Browse Files</Button>
                 {skipMessage && (
                     <p className="text-xs text-muted-foreground">{skipMessage}</p>
                 )}

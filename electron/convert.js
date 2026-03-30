@@ -158,15 +158,26 @@ function registerConvertHandlers() {
         const cmd = ffmpeg(inputPath).setFfmpegPath(ffmpegStaticPath)
 
         if (width || height) {
-          const w = width || -2
-          const h = height || -2
-          // -2 = scale to preserve aspect ratio and keep divisible by 2
+          // For Scale fit, missing dimension defaults to the other (square output)
+          const effectiveWidth = width || (fit === 'scale' ? height : undefined)
+          const effectiveHeight = height || (fit === 'scale' ? width : undefined)
+          // Round user-supplied dimensions down to nearest even number (libx264 requires even dimensions)
+          const w = effectiveWidth ? (effectiveWidth % 2 === 0 ? effectiveWidth : effectiveWidth - 1) : -2
+          const h = effectiveHeight ? (effectiveHeight % 2 === 0 ? effectiveHeight : effectiveHeight - 1) : -2
+          // -2 tells FFmpeg to auto-calculate that dimension and keep it divisible by 2.
+          // When both dimensions are set with force_original_aspect_ratio, the calculated
+          // side can still end up odd, so we append a final even-rounding scale pass.
+          const bothSet = w !== -2 && h !== -2
           const scaleFilter = fit === 'crop'
-            ? `scale=${w}:${h}:force_original_aspect_ratio=increase,crop=${w === -2 ? 'iw' : w}:${h === -2 ? 'ih' : h}`
+            ? `scale=${w}:${h}${bothSet ? ':force_original_aspect_ratio=increase' : ''},crop=${w === -2 ? 'iw' : w}:${h === -2 ? 'ih' : h}`
             : fit === 'scale'
               ? `scale=${w}:${h}`
-              : `scale=${w}:${h}:force_original_aspect_ratio=decrease`
-          cmd.videoFilter(scaleFilter)
+              : bothSet
+                ? `scale=${w}:${h}:force_original_aspect_ratio=decrease`
+                : `scale=${w}:${h}`
+          // First normalize to display dimensions (handles non-1:1 SAR sources like screen recordings)
+          const fullFilter = `[0:v]scale=iw*sar:ih,${scaleFilter},scale=trunc(iw/2)*2:trunc(ih/2)*2,setsar=1[vout]`
+          cmd.complexFilter(fullFilter).outputOptions(['-map [vout]', '-map 0:a?'])
         }
 
         if (targetFormat === 'gif') {
@@ -177,7 +188,7 @@ function registerConvertHandlers() {
           cmd.output(outputPath)
         }
 
-        cmd.on('end', resolve).on('error', reject).run()
+        cmd.on('end', resolve).on('error', (err, _stdout, stderr) => reject(new Error(stderr || err.message))).run()
       })
 
       const result = fs.readFileSync(outputPath)
