@@ -93,7 +93,7 @@ export function NavigationSecondary() {
             pathname.startsWith('/extensions/pdf') ? 'PDF' : null
     )
     const [isOnline, setIsOnline] = useState(navigator.onLine)
-    const [showPricing, setShowPricing] = useState(false);
+    const [showPricing, setShowPricing] = useState(false)
 
     useEffect(() => {
         const on = () => setIsOnline(true)
@@ -101,15 +101,16 @@ export function NavigationSecondary() {
         window.addEventListener('online', on)
         window.addEventListener('offline', off)
 
-        const userHidPricing = localStorage.getItem(PRICING_DISMISSED_KEY)
-        if (userHidPricing === 'true') setShowPricing(true)
-
         return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off) }
     }, [])
 
     useEffect(() => {
         setOpen(false)
     }, [pathname])
+
+    useEffect(() => {
+        if (open) setShowPricing(localStorage.getItem(PRICING_DISMISSED_KEY) === 'true')
+    }, [open])
 
     return (
         <div className="flex items-center gap-x-2">

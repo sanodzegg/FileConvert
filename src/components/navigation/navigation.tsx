@@ -33,9 +33,7 @@ export default function Navigation() {
 
     const links = baseLinks.filter(l => l.path !== '/pricing' || !pricingDismissed)
 
-    function dismissPricing(e: React.MouseEvent) {
-        e.preventDefault()
-        e.stopPropagation()
+    function dismissPricing() {
         setPricingDissolving(true)
         setTimeout(() => {
             localStorage.setItem(PRICING_DISMISSED_KEY, 'true')
@@ -57,7 +55,7 @@ export default function Navigation() {
                     <NavigationMenu>
                         <NavigationMenuList className="gap-x-4 2xl:gap-x-5">
                             {links.map((link) => (
-                                <NavigationMenuItem key={link.path}>
+                                <NavigationMenuItem key={link.path} className={cn("relative", link.path === '/pricing' && pricingDissolving && "opacity-0 scale-75 transition-all duration-500")}>
                                     <NavLink to={link.path}>
                                         {({ isActive }) => (
                                             <NavigationMenuLink
@@ -65,14 +63,14 @@ export default function Navigation() {
                                                 active={isActive}
                                                 className={cn(navigationMenuTriggerStyle(), "p-0 bg-transparent hover:bg-transparent focus:bg-transparent data-active:bg-transparent")}
                                             >
-                                                <Button variant={isActive ? 'default' : 'outline'} className={cn("font-normal 2xl:text-base 2xl:h-10 2xl:px-5 dark:border-secondary pointer-events-none transition-all duration-500", link.path === '/pricing' && pricingDissolving && "opacity-0 scale-75")}>
+                                                <Button variant={isActive ? 'default' : 'outline'} className="font-normal 2xl:text-base 2xl:h-10 2xl:px-5 dark:border-secondary pointer-events-none">
                                                     {link.label}
-                                                    {link.path === '/pricing' && (
-                                                        <Button variant={'ghost'} onClick={dismissPricing} className="absolute bg-muted cursor-pointer pointer-events-auto! rounded-full! p-0.5! h-fit! -top-1 -right-2 active:translate-y-0!">
-                                                            <X className="text-accent-foreground" />
-                                                        </Button>
-                                                    )}
                                                 </Button>
+                                                {link.path === '/pricing' && (
+                                                    <Button variant={'ghost'} onClick={dismissPricing} className="absolute bg-muted cursor-pointer pointer-events-auto! rounded-full! p-0.5! h-fit! -top-1 -right-2">
+                                                        <X className="text-accent-foreground" />
+                                                    </Button>
+                                                )}
                                             </NavigationMenuLink>
                                         )}
                                     </NavLink>
