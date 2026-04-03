@@ -63,8 +63,9 @@ export default function ComparisonSlider({ quality, format = 'jpeg', imageSrc, o
   // Re-encode when imageSrc changes
   useEffect(() => {
     if (!imageSrc) return
+    encodeIdRef.current++
     setLoaded(false)
-    setCompressedSrc(null)
+    setCompressedSrc(prev => { if (prev) URL.revokeObjectURL(prev); return null })
     sourceBufferRef.current = null
   }, [imageSrc])
 
