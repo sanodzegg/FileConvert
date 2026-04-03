@@ -5,9 +5,13 @@ import { useTheme } from '../theme/theme-provider'
 
 interface Props {
   quality: number
+  format?: string
+  imageSrc?: string
+  onSizes?: (original: number, compressed: number) => void
+  onEncodingChange?: (encoding: boolean) => void
 }
 
-export default function ComparisonSlider({ quality }: Props) {
+export default function ComparisonSlider({ quality, format = 'jpeg', imageSrc, onSizes, onEncodingChange }: Props) {
   const [loaded, setLoaded] = useState(false)
   const [compressedSrc, setCompressedSrc] = useState<string | null>(null)
   const [encoding, setEncoding] = useState(false)
@@ -15,15 +19,26 @@ export default function ComparisonSlider({ quality }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const sourceBufferRef = useRef<ArrayBuffer | null>(null)
   const dragging = useRef(false)
+  const onSizesRef = useRef(onSizes)
+  onSizesRef.current = onSizes
+  const onEncodingChangeRef = useRef(onEncodingChange)
+  onEncodingChangeRef.current = onEncodingChange
+  const encodeIdRef = useRef(0)
 
   const { theme } = useTheme()
-  const presentationImage = theme === 'dark' ? presentationImg : presentationImgLight
+  const fallbackSrc = theme === 'dark' ? presentationImg : presentationImgLight
+  const displaySrc = imageSrc ?? fallbackSrc
 
-  async function encode(buffer: ArrayBuffer, q: number) {
+  async function encode(buffer: ArrayBuffer, q: number, fmt: string) {
+    const id = ++encodeIdRef.current
     setEncoding(true)
+    onEncodingChangeRef.current?.(true)
     try {
-      const result = await window.electron.convert(buffer, 'jpeg', q)
-      const blob = new Blob([result.buffer as ArrayBuffer], { type: 'image/jpeg' })
+      const result = await window.electron.convert(buffer, fmt, q)
+      if (id !== encodeIdRef.current) return
+      const compressed = result.buffer as ArrayBuffer
+      if (onSizesRef.current) onSizesRef.current(buffer.byteLength, compressed.byteLength)
+      const blob = new Blob([compressed], { type: `image/${fmt}` })
       const url = URL.createObjectURL(blob)
       setCompressedSrc(prev => {
         if (prev) URL.revokeObjectURL(prev)
@@ -32,15 +47,26 @@ export default function ComparisonSlider({ quality }: Props) {
     } catch (e) {
       console.error('[ComparisonSlider] encode failed:', e)
     } finally {
-      setEncoding(false)
+      if (id === encodeIdRef.current) {
+        setEncoding(false)
+        onEncodingChangeRef.current?.(false)
+      }
     }
   }
 
   useEffect(() => {
     if (!sourceBufferRef.current) return
-    const timer = setTimeout(() => encode(sourceBufferRef.current!, quality), 300)
+    const timer = setTimeout(() => encode(sourceBufferRef.current!, quality, format), 300)
     return () => clearTimeout(timer)
-  }, [quality])
+  }, [quality, format])
+
+  // Re-encode when imageSrc changes
+  useEffect(() => {
+    if (!imageSrc) return
+    setLoaded(false)
+    setCompressedSrc(null)
+    sourceBufferRef.current = null
+  }, [imageSrc])
 
   async function onImgLoad({ currentTarget }: React.SyntheticEvent<HTMLImageElement>) {
     setLoaded(true)
@@ -48,7 +74,7 @@ export default function ComparisonSlider({ quality }: Props) {
       const res = await fetch(currentTarget.src)
       const buffer = await res.arrayBuffer()
       sourceBufferRef.current = buffer
-      await encode(buffer, quality)
+      await encode(buffer, quality, format)
     } catch (e) {
       console.error('[ComparisonSlider] fetch failed:', e)
     }
@@ -101,7 +127,7 @@ export default function ComparisonSlider({ quality }: Props) {
         />
       ) : (
         <img
-          src={presentationImage}
+          src={displaySrc}
           alt="placeholder"
           draggable={false}
           className="absolute inset-0 w-full h-full object-cover"
@@ -111,7 +137,7 @@ export default function ComparisonSlider({ quality }: Props) {
 
       <div className="absolute inset-0 overflow-hidden" style={{ clipPath: `inset(0 ${100 - position}% 0 0)` }}>
         <img
-          src={presentationImage}
+          src={displaySrc}
           alt="original"
           draggable={false}
           onLoad={onImgLoad}

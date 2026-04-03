@@ -95,13 +95,14 @@ const extensions: Extension[] = [
                 description: 'Compress images with before/after size comparison',
                 href: '/extensions/image-compression',
                 icon: <Zap className="size-5" />,
-                disabled: true,
+                proOnly: true,
             },
             {
                 title: 'Palette Extractor',
                 description: 'Extract dominant colors from any image',
                 href: '/extensions/palette-extractor',
                 icon: <Pipette className="size-5" />,
+                proOnly: true,
             },
             {
                 title: 'SVG Editor',
