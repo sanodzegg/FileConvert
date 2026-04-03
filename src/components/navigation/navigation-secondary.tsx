@@ -10,50 +10,139 @@ import {
     SheetTrigger,
 } from "../ui/sheet";
 import { cn } from "@/lib/utils";
-import { Camera, ChevronRight, FileDown, FilePlus, FolderSync, Globe, ImageIcon, LayoutGrid, Lock, PenLine, Tag, User, WifiOff } from "lucide-react";
+import { Camera, ChevronRight, Crop, FileDown, FilePlus, FolderInput, FolderSync, Globe, ImageIcon, LayoutGrid, Lock, PenLine, Pipette, Star, Tag, TextCursorInput, User, WifiOff, Zap } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
 import { PRICING_DISMISSED_KEY } from "./navigation";
 
-type SimpleExtension = { kind: 'link'; title: string; description: string; href: string; icon: React.ReactNode; proOnly?: boolean }
-type GroupExtension = { kind: 'group'; title: string; icon: React.ReactNode; proOnly?: boolean; children: { title: string; description: string; href: string; icon: React.ReactNode; disabled?: boolean; requiresInternet?: boolean; proOnly?: boolean }[] }
-type Extension = SimpleExtension | GroupExtension
+const FAVORITES_KEY = 'cone_extension_favorites'
+
+function getFavorites(): string[] {
+    try { return JSON.parse(localStorage.getItem(FAVORITES_KEY) ?? '[]') } catch { return [] }
+}
+
+function saveFavorites(favs: string[]) {
+    localStorage.setItem(FAVORITES_KEY, JSON.stringify(favs))
+}
+
+function renderChild(
+    child: GroupChild,
+    isLimited: boolean,
+    isOnline: boolean,
+    favorites: string[],
+    toggleFavorite: (href: string) => void
+) {
+    const childLocked = isLimited && !!child.proOnly
+    const isDisabled = child.disabled || (!isOnline && child.requiresInternet) || childLocked
+    const isFav = favorites.includes(child.href)
+
+    if (isDisabled) return (
+        <div key={child.href} className="flex items-center gap-2.5 rounded-lg p-2.5 2xl:p-3 opacity-40 cursor-not-allowed">
+            <div className="shrink-0 text-muted-foreground">{child.icon}</div>
+            <div className="flex-1">
+                <p className="text-sm 2xl:text-base font-medium leading-none mb-0.5">{child.title}</p>
+                <p className="text-xs 2xl:text-sm text-muted-foreground">{child.description}</p>
+            </div>
+            {childLocked && <Lock className="size-4 shrink-0 text-muted-foreground" />}
+            {!isOnline && child.requiresInternet && <WifiOff className="size-4 2xl:size-5 text-destructive shrink-0" />}
+        </div>
+    )
+
+    return (
+        <NavLink key={child.href} to={child.href}>
+            {({ isActive }) => (
+                <div className={cn(
+                    "group flex items-center gap-2.5 rounded-lg p-2.5 2xl:p-3 transition-colors cursor-pointer",
+                    isActive ? "bg-primary/10 text-primary" : "hover:bg-accent text-foreground"
+                )}>
+                    <div className={cn("shrink-0", isActive ? "text-primary" : "text-muted-foreground")}>{child.icon}</div>
+                    <div className="flex-1">
+                        <p className="text-sm 2xl:text-base font-medium leading-none mb-0.5">{child.title}</p>
+                        <p className="text-xs 2xl:text-sm text-muted-foreground">{child.description}</p>
+                    </div>
+                    <button
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleFavorite(child.href) }}
+                        className={cn(
+                            "shrink-0 transition-opacity cursor-pointer p-1 -m-1 rounded",
+                            isFav ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                        )}
+                    >
+                        <Star className={cn("size-3.5", isFav ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground")} />
+                    </button>
+                </div>
+            )}
+        </NavLink>
+    )
+}
+
+type GroupChild = { title: string; description: string; href: string; icon: React.ReactNode; disabled?: boolean; requiresInternet?: boolean; proOnly?: boolean }
+type Extension = { kind: 'group'; title: string; icon: React.ReactNode; proOnly?: boolean; children: GroupChild[] }
 
 const extensions: Extension[] = [
     {
-        kind: 'link',
-        title: 'SVG Editor',
-        description: 'Preview, optimize, and export SVGs as code or Data URI',
-        href: '/extensions/svg-editor',
-        icon: <PenLine className="size-5" />,
-    },
-    {
-        kind: 'link',
-        title: 'Favicon Generator',
-        description: 'Generate a full favicon set from any image',
-        href: '/extensions/favicon',
-        icon: <Globe className="size-5" />,
-    },
-    {
-        kind: 'link',
-        title: 'Image Editor',
-        description: 'Crop, transform, and adjust images',
-        href: '/extensions/image-editor',
+        kind: 'group',
+        title: 'Image',
         icon: <ImageIcon className="size-5" />,
-        proOnly: true,
+        children: [
+            {
+                title: 'Image Editor',
+                description: 'Crop, transform, and adjust images',
+                href: '/extensions/image-editor',
+                icon: <Crop className="size-5" />,
+                proOnly: true,
+            },
+            {
+                title: 'Image Compression',
+                description: 'Compress images with before/after size comparison',
+                href: '/extensions/image-compression',
+                icon: <Zap className="size-5" />,
+                disabled: true,
+            },
+            {
+                title: 'Palette Extractor',
+                description: 'Extract dominant colors from any image',
+                href: '/extensions/palette-extractor',
+                icon: <Pipette className="size-5" />,
+                disabled: true,
+            },
+            {
+                title: 'SVG Editor',
+                description: 'Preview, optimize, and export SVGs as code or Data URI',
+                href: '/extensions/svg-editor',
+                icon: <PenLine className="size-5" />,
+            },
+            {
+                title: 'Favicon Generator',
+                description: 'Generate a full favicon set from any image',
+                href: '/extensions/favicon',
+                icon: <Globe className="size-5" />,
+            },
+        ],
     },
     {
-        kind: 'link',
-        title: 'Bulk Converter',
-        description: 'Convert all images in a folder recursively',
-        href: '/extensions/bulk-converter',
+        kind: 'group',
+        title: 'Batch',
         icon: <FolderSync className="size-5" />,
-        proOnly: true,
+        children: [
+            {
+                title: 'Bulk Converter',
+                description: 'Convert all images in a folder recursively',
+                href: '/extensions/bulk-converter',
+                icon: <FolderInput className="size-5" />,
+                proOnly: true,
+            },
+            {
+                title: 'Batch Rename',
+                description: 'Rename files with patterns, prefixes, and sequences',
+                href: '/extensions/batch-rename',
+                icon: <TextCursorInput className="size-5" />,
+                disabled: true,
+            },
+        ],
     },
     {
         kind: 'group',
         title: 'Web',
         icon: <Globe className="size-5" />,
-        proOnly: true,
         children: [
             {
                 title: 'Screenshot',
@@ -61,6 +150,7 @@ const extensions: Extension[] = [
                 href: '/extensions/website-screenshot',
                 icon: <Camera className="size-5" />,
                 requiresInternet: true,
+                proOnly: true,
             },
             {
                 title: 'Download as PDF',
@@ -68,6 +158,7 @@ const extensions: Extension[] = [
                 href: '/extensions/website-pdf',
                 icon: <FileDown className="size-5" />,
                 requiresInternet: true,
+                proOnly: true,
             },
         ],
     },
@@ -83,7 +174,7 @@ const extensions: Extension[] = [
                 icon: <FilePlus className="size-5" />,
             },
         ],
-    }
+    },
 ]
 
 export function NavigationSecondary() {
@@ -92,12 +183,35 @@ export function NavigationSecondary() {
     const { user, plan } = useAuth()
     const isLimited = plan === 'limited'
     const [open, setOpen] = useState(false)
-    const [expandedGroup, setExpandedGroup] = useState<string | null>(
-        pathname.startsWith('/extensions/website') ? 'Web' :
-            pathname.startsWith('/extensions/pdf') ? 'PDF' : null
-    )
+    const [favorites, setFavorites] = useState<string[]>(getFavorites)
+    const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => {
+        const initial = new Set<string>()
+        if (getFavorites().length > 0) initial.add('Favorites')
+        if (pathname.startsWith('/extensions/website')) initial.add('Web')
+        else if (pathname.startsWith('/extensions/pdf')) initial.add('PDF')
+        else if (pathname.startsWith('/extensions/bulk-converter') || pathname.startsWith('/extensions/batch-rename')) initial.add('Batch')
+        else if (pathname.startsWith('/extensions/image') || pathname.startsWith('/extensions/svg') || pathname.startsWith('/extensions/favicon') || pathname.startsWith('/extensions/palette')) initial.add('Image')
+        return initial
+    })
     const [isOnline, setIsOnline] = useState(navigator.onLine)
     const [showPricing, setShowPricing] = useState(false)
+
+    function toggleGroup(title: string) {
+        setExpandedGroups(prev => {
+            const next = new Set(prev)
+            next.has(title) ? next.delete(title) : next.add(title)
+            return next
+        })
+    }
+
+    function toggleFavorite(href: string) {
+        setFavorites(prev => {
+            const next = prev.includes(href) ? prev.filter(h => h !== href) : [...prev, href]
+            saveFavorites(next)
+            if (next.length > 0) setExpandedGroups(g => new Set(g).add('Favorites'))
+            return next
+        })
+    }
 
     useEffect(() => {
         const on = () => setIsOnline(true)
@@ -136,54 +250,52 @@ export function NavigationSecondary() {
                         <SheetTitle className={'font-body 2xl:text-xl'}>Extensions</SheetTitle>
                     </SheetHeader>
                     <div className="flex flex-col gap-2 p-4 pt-0 flex-1 overflow-y-auto">
-                        {extensions.map((ext) => {
-                            if (ext.kind === 'link') {
-                                const locked = isLimited && !!ext.proOnly
-                                if (locked) return (
-                                    <div key={ext.href} className="flex items-start gap-3 rounded-lg p-3 2xl:p-4 opacity-50 cursor-not-allowed">
-                                        <div className="mt-0.5 shrink-0 text-muted-foreground">{ext.icon}</div>
-                                        <div className="flex-1">
-                                            <p className="text-sm 2xl:text-base font-medium leading-none mb-1">{ext.title}</p>
-                                            <p className="text-xs 2xl:text-sm text-muted-foreground">{ext.description}</p>
-                                        </div>
-                                        <Lock className="size-4 shrink-0 text-muted-foreground mt-0.5" />
-                                    </div>
-                                )
-                                return (
-                                    <NavLink key={ext.href} to={ext.href}>
-                                        {({ isActive }) => (
-                                            <div className={cn(
-                                                "flex items-start gap-3 rounded-lg p-3 2xl:p-4 transition-colors cursor-pointer",
-                                                isActive ? "bg-primary/10 text-primary" : "hover:bg-accent text-foreground"
-                                            )}>
-                                                <div className={cn("mt-0.5 shrink-0", isActive ? "text-primary" : "text-muted-foreground")}>
-                                                    {ext.icon}
-                                                </div>
-                                                <div>
-                                                    <p className="text-sm 2xl:text-base font-medium leading-none mb-1">{ext.title}</p>
-                                                    <p className="text-xs 2xl:text-sm text-muted-foreground">{ext.description}</p>
-                                                </div>
-                                            </div>
+                        {/* Favorites group */}
+                        {favorites.length > 0 && (() => {
+                            const favChildren = extensions.flatMap(e => e.children).filter(c => favorites.includes(c.href))
+                            const isExpanded = expandedGroups.has('Favorites')
+                            const isFavGroupActive = favChildren.some(c => pathname === c.href)
+                            return (
+                                <div key="Favorites">
+                                    <button
+                                        onClick={() => toggleGroup('Favorites')}
+                                        className={cn(
+                                            "w-full flex items-center gap-3 rounded-lg p-3 2xl:p-4 transition-colors cursor-pointer",
+                                            isFavGroupActive ? "bg-primary/10 text-primary" : "hover:bg-accent text-foreground"
                                         )}
-                                    </NavLink>
-                                )
-                            }
+                                    >
+                                        <Star className={cn("size-5 shrink-0", isFavGroupActive ? "text-primary" : "text-muted-foreground")} />
+                                        <span className="text-sm 2xl:text-base font-medium flex-1 text-left">Favorites</span>
+                                        <ChevronRight className={cn("size-4 2xl:size-5 text-muted-foreground transition-transform", isExpanded && "rotate-90")} />
+                                    </button>
+                                    {isExpanded && (
+                                        <div className="ml-4 mt-1 flex flex-col gap-1 border-l border-border pl-3">
+                                            {favChildren.map(child => renderChild(child, isLimited, isOnline, favorites, toggleFavorite))}
+                                        </div>
+                                    )}
+                                </div>
+                            )
+                        })()}
 
-                            const isGroupActive = ext.children.some(c => pathname === c.href)
-                            const isExpanded = expandedGroup === ext.title
-                            const groupLocked = isLimited && !!ext.proOnly
+                        {extensions.map((ext) => {
+                            const visibleChildren = ext.children.filter(c => !favorites.includes(c.href))
+                            if (visibleChildren.length === 0) return null
+                            const allChildrenLocked = isLimited && visibleChildren.every(c => !!c.proOnly)
+                            const groupLocked = allChildrenLocked
+                            const isExpanded = expandedGroups.has(ext.title) && !groupLocked
+                            const isGroupActive = !groupLocked && visibleChildren.some(c => pathname === c.href)
 
                             return (
                                 <div key={ext.title}>
                                     <button
-                                        onClick={() => !groupLocked && setExpandedGroup(isExpanded ? null : ext.title)}
+                                        onClick={() => !groupLocked && toggleGroup(ext.title)}
                                         className={cn(
                                             "w-full flex items-center gap-3 rounded-lg p-3 2xl:p-4 transition-colors",
                                             groupLocked ? "opacity-50 cursor-not-allowed" : "cursor-pointer",
                                             !groupLocked && (isGroupActive ? "bg-primary/10 text-primary" : "hover:bg-accent text-foreground")
                                         )}
                                     >
-                                        <div className={cn("shrink-0", isGroupActive && !groupLocked ? "text-primary" : "text-muted-foreground")}>
+                                        <div className={cn("shrink-0", isGroupActive ? "text-primary" : "text-muted-foreground")}>
                                             {ext.icon}
                                         </div>
                                         <span className="text-sm 2xl:text-base font-medium flex-1 text-left">{ext.title}</span>
@@ -194,35 +306,7 @@ export function NavigationSecondary() {
                                     </button>
                                     {isExpanded && (
                                         <div className="ml-4 mt-1 flex flex-col gap-1 border-l border-border pl-3">
-                                            {ext.children.map(child => {
-                                                const isDisabled = child.disabled || (!isOnline && child.requiresInternet)
-                                                if (isDisabled) return (
-                                                    <div key={child.href} className="flex items-center gap-2.5 rounded-lg p-2.5 2xl:p-3 opacity-40 cursor-not-allowed">
-                                                        <div className="shrink-0 text-muted-foreground">{child.icon}</div>
-                                                        <div className="flex-1">
-                                                            <p className="text-sm 2xl:text-base font-medium leading-none mb-0.5">{child.title}</p>
-                                                            <p className="text-xs 2xl:text-sm text-muted-foreground">{child.description}</p>
-                                                        </div>
-                                                        {!isOnline && child.requiresInternet && <WifiOff className="size-4 2xl:size-5 text-destructive shrink-0" />}
-                                                    </div>
-                                                )
-                                                return (
-                                                    <NavLink key={child.href} to={child.href}>
-                                                        {({ isActive }) => (
-                                                            <div className={cn(
-                                                                "flex items-center gap-2.5 rounded-lg p-2.5 2xl:p-3 transition-colors cursor-pointer",
-                                                                isActive ? "bg-primary/10 text-primary" : "hover:bg-accent text-foreground"
-                                                            )}>
-                                                                <div className={cn("shrink-0", isActive ? "text-primary" : "text-muted-foreground")}>{child.icon}</div>
-                                                                <div>
-                                                                    <p className="text-sm 2xl:text-base font-medium leading-none mb-0.5">{child.title}</p>
-                                                                    <p className="text-xs 2xl:text-sm text-muted-foreground">{child.description}</p>
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                    </NavLink>
-                                                )
-                                            })}
+                                            {visibleChildren.map(child => renderChild(child, isLimited, isOnline, favorites, toggleFavorite))}
                                         </div>
                                     )}
                                 </div>
