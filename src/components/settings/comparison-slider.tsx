@@ -9,16 +9,20 @@ interface Props {
   imageSrc?: string
   onSizes?: (original: number, compressed: number) => void
   onEncodingChange?: (encoding: boolean) => void
+  zoom?: number
 }
 
-export default function ComparisonSlider({ quality, format = 'jpeg', imageSrc, onSizes, onEncodingChange }: Props) {
+export default function ComparisonSlider({ quality, format = 'jpeg', imageSrc, onSizes, onEncodingChange, zoom = 1 }: Props) {
   const [loaded, setLoaded] = useState(false)
   const [compressedSrc, setCompressedSrc] = useState<string | null>(null)
   const [encoding, setEncoding] = useState(false)
   const [position, setPosition] = useState(50)
+  const [pan, setPan] = useState({ x: 0, y: 0 })
   const containerRef = useRef<HTMLDivElement>(null)
   const sourceBufferRef = useRef<ArrayBuffer | null>(null)
-  const dragging = useRef(false)
+  const sliderDragging = useRef(false)
+  const panDragging = useRef(false)
+  const panStart = useRef({ x: 0, y: 0, panX: 0, panY: 0 })
   const onSizesRef = useRef(onSizes)
   onSizesRef.current = onSizes
   const onEncodingChangeRef = useRef(onEncodingChange)
@@ -28,6 +32,23 @@ export default function ComparisonSlider({ quality, format = 'jpeg', imageSrc, o
   const { theme } = useTheme()
   const fallbackSrc = theme === 'dark' ? presentationImg : presentationImgLight
   const displaySrc = imageSrc ?? fallbackSrc
+
+  // Reset pan when zoom returns to 1
+  useEffect(() => {
+    if (zoom <= 1) setPan({ x: 0, y: 0 })
+  }, [zoom])
+
+  // Clamp pan so image edges don't go past the container
+  const clampPan = useCallback((x: number, y: number) => {
+    const rect = containerRef.current?.getBoundingClientRect()
+    if (!rect) return { x, y }
+    const maxX = (rect.width * (zoom - 1)) / 2
+    const maxY = (rect.height * (zoom - 1)) / 2
+    return {
+      x: Math.min(maxX, Math.max(-maxX, x)),
+      y: Math.min(maxY, Math.max(-maxY, y)),
+    }
+  }, [zoom])
 
   async function encode(buffer: ArrayBuffer, q: number, fmt: string) {
     const id = ++encodeIdRef.current
@@ -60,7 +81,6 @@ export default function ComparisonSlider({ quality, format = 'jpeg', imageSrc, o
     return () => clearTimeout(timer)
   }, [quality, format])
 
-  // Re-encode when imageSrc changes
   useEffect(() => {
     if (!imageSrc) return
     encodeIdRef.current++
@@ -81,18 +101,20 @@ export default function ComparisonSlider({ quality, format = 'jpeg', imageSrc, o
     }
   }
 
-  const updatePosition = useCallback((clientX: number) => {
+  const updateSliderPosition = useCallback((clientX: number) => {
     const rect = containerRef.current?.getBoundingClientRect()
     if (!rect) return
     setPosition(Math.min(100, Math.max(0, ((clientX - rect.left) / rect.width) * 100)))
   }, [])
 
-  const onMouseDown = (e: React.MouseEvent) => {
-    dragging.current = true
+  // Slider handle drag — takes priority, does not pan
+  const onSliderMouseDown = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    sliderDragging.current = true
     e.preventDefault()
-    const onMove = (e: MouseEvent) => { if (dragging.current) updatePosition(e.clientX) }
+    const onMove = (e: MouseEvent) => { if (sliderDragging.current) updateSliderPosition(e.clientX) }
     const onUp = () => {
-      dragging.current = false
+      sliderDragging.current = false
       window.removeEventListener('mousemove', onMove)
       window.removeEventListener('mouseup', onUp)
     }
@@ -100,8 +122,9 @@ export default function ComparisonSlider({ quality, format = 'jpeg', imageSrc, o
     window.addEventListener('mouseup', onUp)
   }
 
-  const onTouchStart = (e: React.TouchEvent) => {
-    const onMove = (e: TouchEvent) => updatePosition(e.touches[0].clientX)
+  const onSliderTouchStart = (e: React.TouchEvent) => {
+    e.stopPropagation()
+    const onMove = (e: TouchEvent) => updateSliderPosition(e.touches[0].clientX)
     const onEnd = () => {
       window.removeEventListener('touchmove', onMove)
       window.removeEventListener('touchend', onEnd)
@@ -110,21 +133,61 @@ export default function ComparisonSlider({ quality, format = 'jpeg', imageSrc, o
     window.addEventListener('touchend', onEnd)
   }
 
+  // Container drag — pan when zoomed, otherwise move slider
+  const onContainerMouseDown = (e: React.MouseEvent) => {
+    if (zoom > 1) {
+      panDragging.current = true
+      panStart.current = { x: e.clientX, y: e.clientY, panX: pan.x, panY: pan.y }
+      e.preventDefault()
+      const onMove = (e: MouseEvent) => {
+        if (!panDragging.current) return
+        const dx = e.clientX - panStart.current.x
+        const dy = e.clientY - panStart.current.y
+        setPan(clampPan(panStart.current.panX + dx, panStart.current.panY + dy))
+      }
+      const onUp = () => {
+        panDragging.current = false
+        window.removeEventListener('mousemove', onMove)
+        window.removeEventListener('mouseup', onUp)
+      }
+      window.addEventListener('mousemove', onMove)
+      window.addEventListener('mouseup', onUp)
+    } else {
+      sliderDragging.current = true
+      e.preventDefault()
+      updateSliderPosition(e.clientX)
+      const onMove = (e: MouseEvent) => { if (sliderDragging.current) updateSliderPosition(e.clientX) }
+      const onUp = () => {
+        sliderDragging.current = false
+        window.removeEventListener('mousemove', onMove)
+        window.removeEventListener('mouseup', onUp)
+      }
+      window.addEventListener('mousemove', onMove)
+      window.addEventListener('mouseup', onUp)
+    }
+  }
+
+  const imgStyle = (extra?: React.CSSProperties): React.CSSProperties => ({
+    transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
+    transformOrigin: 'center',
+    ...extra,
+  })
+
   return (
     <div
       ref={containerRef}
-      className="relative w-full rounded-xl overflow-hidden select-none cursor-col-resize"
-      style={{ aspectRatio: '16/7' }}
-      onMouseDown={onMouseDown}
+      className="relative w-full rounded-xl overflow-hidden select-none"
+      style={{ aspectRatio: '16/7', cursor: zoom > 1 ? 'grab' : 'col-resize' }}
+      onMouseDown={onContainerMouseDown}
     >
-      {/* Compressed (right side) — blurred while encoding, blurred original as placeholder before first encode */}
+      {/* Compressed (right side) */}
       {compressedSrc ? (
         <img
           src={compressedSrc}
           alt="compressed"
           draggable={false}
           className="absolute inset-0 w-full h-full object-cover transition-[filter] duration-300"
-          style={{ filter: encoding ? 'blur(6px)' : 'none' }}
+          style={imgStyle({ filter: encoding ? 'blur(6px)' : 'none' })}
         />
       ) : (
         <img
@@ -132,7 +195,7 @@ export default function ComparisonSlider({ quality, format = 'jpeg', imageSrc, o
           alt="placeholder"
           draggable={false}
           className="absolute inset-0 w-full h-full object-cover"
-          style={{ filter: 'blur(12px)', transform: 'scale(1.05)' }}
+          style={imgStyle({ filter: 'blur(12px)' })}
         />
       )}
 
@@ -143,7 +206,7 @@ export default function ComparisonSlider({ quality, format = 'jpeg', imageSrc, o
           draggable={false}
           onLoad={onImgLoad}
           className="absolute inset-0 w-full h-full object-cover transition-opacity duration-300"
-          style={{ opacity: loaded ? 1 : 0 }}
+          style={imgStyle({ opacity: loaded ? 1 : 0 })}
         />
       </div>
 
@@ -151,13 +214,11 @@ export default function ComparisonSlider({ quality, format = 'jpeg', imageSrc, o
         <div
           className="absolute top-0 bottom-0 w-8 2xl:w-10 -translate-x-1/2 flex items-center justify-center cursor-col-resize"
           style={{ left: `${position}%` }}
-          onMouseDown={onMouseDown}
-          onTouchStart={onTouchStart}
+          onMouseDown={onSliderMouseDown}
+          onTouchStart={onSliderTouchStart}
         >
           <div className="w-px h-full bg-white/70 shadow-[0_0_6px_rgba(0,0,0,0.5)]" />
-          <div
-            className="absolute top-1/2 -translate-y-1/2 w-8 h-8 2xl:w-10 2xl:h-10 rounded-full bg-white shadow-lg flex items-center justify-center cursor-col-resize"
-          >
+          <div className="absolute top-1/2 -translate-y-1/2 w-8 h-8 2xl:w-10 2xl:h-10 rounded-full bg-white shadow-lg flex items-center justify-center cursor-col-resize">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="2xl:scale-125">
               <path d="M5 4L2 8L5 12" stroke="#7c3aed" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
               <path d="M11 4L14 8L11 12" stroke="#7c3aed" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />

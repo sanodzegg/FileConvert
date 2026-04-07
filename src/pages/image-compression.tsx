@@ -1,5 +1,5 @@
 import { useState, useRef, lazy } from 'react'
-import { Import, RotateCcw, Download } from 'lucide-react'
+import { Import, RotateCcw, Download, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
@@ -31,6 +31,7 @@ export default function ImageCompression() {
   const [compressedSize, setCompressedSize] = useState<number | null>(null)
   const [encoding, setEncoding] = useState(false)
   const [dragOver, setDragOver] = useState(false)
+  const [zoom, setZoom] = useState(1)
   const inputRef = useRef<HTMLInputElement>(null)
   const dropzoneRef = useRef<HTMLDivElement>(null)
   const fileRef = useRef<File | null>(null)
@@ -83,6 +84,7 @@ export default function ImageCompression() {
     setOriginalSize(null)
     setCompressedSize(null)
     setEncoding(false)
+    setZoom(1)
     fileRef.current = null
   }
 
@@ -135,42 +137,80 @@ export default function ImageCompression() {
           </div>
         </>
       ) : (
-        <div className="flex gap-6">
-          {/* Left: controls */}
-          <div className="w-64 shrink-0 space-y-5">
-            <input ref={inputRef} type="file" accept={ACCEPTED} className="sr-only" onChange={onFileChange} />
+        <div className="flex flex-col gap-5">
+          <input ref={inputRef} type="file" accept={ACCEPTED} className="sr-only" onChange={onFileChange} />
 
-            {/* Thumbnail */}
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Image</Label>
+          {/* Comparison slider with zoom controls */}
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">Drag the slider to compare</p>
+              <div className="flex items-center gap-1">
+                {zoom !== 1 && (
+                  <button
+                    onClick={() => setZoom(1)}
+                    className="h-7 w-7 flex items-center justify-center rounded-md border border-border hover:bg-accent transition-colors"
+                    title="Reset zoom"
+                  >
+                    <Maximize2 className="size-3.5" />
+                  </button>
+                )}
+                <button
+                  onClick={() => setZoom(z => Math.max(1, +(z - 0.25).toFixed(2)))}
+                  disabled={zoom <= 1}
+                  className="h-7 w-7 flex items-center justify-center rounded-md border border-border hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  title="Zoom out"
+                >
+                  <ZoomOut className="size-3.5" />
+                </button>
+                <span className="text-xs text-muted-foreground w-10 text-center tabular-nums">{Math.round(zoom * 100)}%</span>
+                <button
+                  onClick={() => setZoom(z => Math.min(4, +(z + 0.25).toFixed(2)))}
+                  disabled={zoom >= 4}
+                  className="h-7 w-7 flex items-center justify-center rounded-md border border-border hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  title="Zoom in"
+                >
+                  <ZoomIn className="size-3.5" />
+                </button>
+              </div>
+            </div>
+            <ComparisonSlider
+              imageSrc={imageSrc}
+              quality={quality}
+              format={format}
+              onSizes={handleSizes}
+              onEncodingChange={setEncoding}
+              zoom={zoom}
+            />
+          </div>
+
+          {/* Settings row */}
+          <div className="relative flex gap-30 justify-between items-stretch">
+            {encoding && <div className="absolute inset-0 z-10 rounded-xl bg-background/50 pointer-events-auto" />}
+            {/* Col 1: image + format */}
+            <div className="flex flex-col gap-3 shrink-0">
               <div
                 onClick={() => inputRef.current?.click()}
                 onDrop={onDrop}
                 onDragOver={e => { e.preventDefault(); setDragOver(true) }}
                 onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOver(false) }}
                 className={cn(
-                  "w-full rounded-xl border border-dashed p-3 flex flex-col items-center gap-2 text-center transition-colors cursor-pointer",
+                  "flex items-center gap-2.5 rounded-xl border border-dashed px-3 py-2.5 cursor-pointer transition-colors",
                   dragOver ? "border-primary/60 bg-accent/60" : "border-border hover:border-primary/50 hover:bg-accent/50"
                 )}
               >
-                <img src={imageSrc} className="w-full h-28 object-cover rounded-lg" />
-                <p className="text-[10px] text-muted-foreground truncate w-full">{imageName}</p>
-                <p className="text-[10px] text-muted-foreground">Click or drop to change</p>
+                <img src={imageSrc} className="h-9 w-9 object-cover rounded-lg shrink-0" />
+                <div>
+                  <p className="text-xs font-medium truncate w-36">{imageName}</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">Click or drop to change</p>
+                </div>
               </div>
-            </div>
-
-            {/* Format */}
-            <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Format</Label>
               <div className="flex gap-1">
                 {FORMATS.map(f => (
                   <button
                     key={f.id}
                     onClick={() => setFormat(f.id)}
-                    disabled={encoding}
                     className={cn(
-                      "flex-1 text-xs py-1.5 rounded-md border transition-colors",
-                      encoding ? "opacity-50 cursor-not-allowed" : "cursor-pointer",
+                      "flex-1 py-1.5 text-xs rounded-md border transition-colors cursor-pointer",
                       format === f.id ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-accent"
                     )}
                   >
@@ -180,64 +220,49 @@ export default function ImageCompression() {
               </div>
             </div>
 
-            {/* Quality */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs text-muted-foreground">Quality</Label>
-                <span className="text-xs font-medium">{quality}%</span>
+            {/* Col 2: quality */}
+            <div className="flex flex-col justify-between grow gap-4">
+              <div className='flex flex-col gap-1.5'>
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-muted-foreground">Quality</Label>
+                  <span className="text-xs font-medium">{quality}%</span>
+                </div>
+                <input
+                  type="range" min={1} max={100} value={quality}
+                  onChange={e => setQuality(Number(e.target.value))}
+                  className="w-full accent-primary"
+                />
+                <div className="flex justify-between text-[10px] text-muted-foreground">
+                  <span>Smaller</span><span>Better</span>
+                </div>
               </div>
-              <input
-                type="range" min={1} max={100} value={quality}
-                onChange={e => setQuality(Number(e.target.value))}
-                className="w-full accent-primary"
-              />
-              <div className="flex justify-between text-[10px] text-muted-foreground">
-                <span>Smaller</span><span>Better</span>
-              </div>
+              {originalSize && (
+                <div className="flex flex-col gap-1 mt-1 text-xs">
+                  <div className="flex justify-between gap-4">
+                    <span className="text-muted-foreground">Original</span>
+                    <span className="font-medium">{formatBytes(originalSize)}</span>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <span className="text-muted-foreground">Compressed</span>
+                    <span className="font-medium">{compressedSize ? formatBytes(compressedSize) : '—'}</span>
+                  </div>
+                  {saved !== null && savedPct !== null && saved !== 0 && (
+                    <div className="flex justify-between gap-4">
+                      <span className="text-muted-foreground">{saved > 0 ? 'Saved' : 'Increased'}</span>
+                      <span className={cn("font-medium", saved > 0 ? "text-green-500" : "text-yellow-500")}>
+                        {formatBytes(Math.abs(saved))} ({Math.abs(savedPct)}%)
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
-            {/* Size comparison */}
-            {originalSize && (
-              <div className="rounded-xl border border-border p-3 space-y-2">
-                <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">Original</span>
-                  <span className="font-medium">{formatBytes(originalSize)}</span>
-                </div>
-                {compressedSize && (
-                  <>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">Compressed</span>
-                      <span className="font-medium">{formatBytes(compressedSize)}</span>
-                    </div>
-                    {saved !== null && savedPct !== null && (
-                      <div className="flex justify-between text-xs border-t border-border pt-2 mt-1">
-                        <span className="text-muted-foreground">Saved</span>
-                        <span className={cn("font-medium", saved > 0 ? "text-green-500" : "text-muted-foreground")}>
-                          {saved > 0 ? `${formatBytes(saved)} (${savedPct}%)` : 'No reduction'}
-                        </span>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            )}
-
-            <Button onClick={download} className="w-full gap-1.5" size="sm">
+            {/* Col 3: download */}
+            <Button onClick={download} disabled={encoding} className="gap-1.5 shrink-0" size="sm">
               <Download className="size-3.5" />
               Download
             </Button>
-          </div>
-
-          {/* Right: comparison slider */}
-          <div className="flex-1 min-w-0 flex flex-col justify-start">
-            <p className="text-sm text-muted-foreground mb-3">Drag the slider to compare</p>
-            <ComparisonSlider
-              imageSrc={imageSrc}
-              quality={quality}
-              format={format}
-              onSizes={handleSizes}
-              onEncodingChange={setEncoding}
-            />
           </div>
         </div>
       )}
