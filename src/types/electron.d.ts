@@ -83,7 +83,14 @@ declare interface Window {
       error?: string
       scores?: { performance: number; accessibility: number; bestPractices: number; seo: number }
       webVitals?: { lcp: string | null; fcp: string | null; cls: string | null; tbt: string | null; si: string | null }
-      topIssues?: { id: string; title: string; score: number | null; displayValue: string | null }[]
+      topIssues?: {
+        id: string
+        title: string
+        description: string | null
+        score: number | null
+        displayValue: string | null
+        items: Record<string, string>[]
+      }[]
     }>
     onLighthouseInstallProgress: (cb: (data: { status: 'progress' | 'done' | 'error'; pct?: number; version?: string; error?: string }) => void) => () => void
   }

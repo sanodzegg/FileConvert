@@ -130,8 +130,41 @@ function registerLighthouseHandlers(mainWindow) {
             topIssues: Object.values(audits)
               .filter((a) => a.score !== null && a.score < 0.9 && a.details?.type !== 'debugdata')
               .sort((a, b) => (a.score ?? 1) - (b.score ?? 1))
-              .slice(0, 8)
-              .map((a) => ({ id: a.id, title: a.title, score: a.score, displayValue: a.displayValue ?? null })),
+              .slice(0, 10)
+              .map((a) => {
+                // Extract detail rows from the audit's details table
+                let items = []
+                const d = a.details
+                if (d && (d.type === 'table' || d.type === 'opportunity') && Array.isArray(d.items)) {
+                  items = d.items.slice(0, 5).map((item) => {
+                    const row = {}
+                    // Pull out the most useful fields from each row
+                    if (item.node?.snippet) row.node = item.node.snippet
+                    if (item.node?.nodeLabel) row.nodeLabel = item.node.nodeLabel
+                    if (item.url) row.url = typeof item.url === 'string' ? item.url : item.url?.value ?? null
+                    if (item.source?.url) row.url = item.source.url
+                    if (item.label) row.label = item.label
+                    if (item.groupLabel) row.label = item.groupLabel
+                    if (item.duration != null) row.duration = Math.round(item.duration) + ' ms'
+                    if (item.wastedMs != null) row.wastedMs = Math.round(item.wastedMs) + ' ms'
+                    if (item.wastedBytes != null) row.wastedBytes = Math.round(item.wastedBytes / 1024) + ' KB'
+                    if (item.totalBytes != null) row.totalBytes = Math.round(item.totalBytes / 1024) + ' KB'
+                    if (item.transferSize != null) row.transferSize = Math.round(item.transferSize / 1024) + ' KB'
+                    if (item.cacheLifetimeMs != null) row.cacheLifetime = Math.round(item.cacheLifetimeMs / 1000) + ' s'
+                    return row
+                  }).filter((row) => Object.keys(row).length > 0)
+                }
+                return {
+                  id: a.id,
+                  title: a.title,
+                  description: a.description
+                    ? a.description.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/`/g, '').slice(0, 200)
+                    : null,
+                  score: a.score,
+                  displayValue: a.displayValue ?? null,
+                  items,
+                }
+              }),
           })
         } catch (e) {
           resolve({ success: false, error: 'Failed to parse report' })
