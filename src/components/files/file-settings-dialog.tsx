@@ -273,12 +273,19 @@ export default function FileSettingsDialog({ file }: { file: File }) {
                         </>
                     )}
 
-                    {/* Quality — image only */}
-                    {isImage && (
+                    {/* Quality — image only, not for GIF (no quality control) */}
+                    {isImage && fileSettings?.targetFormat !== 'gif' && (
                         <div className="space-y-2">
                             <div className="flex items-center justify-between">
-                                <p className="text-sm 2xl:text-base font-medium text-primary">Quality</p>
-                                <span className="text-sm 2xl:text-base font-medium text-primary">{quality}%</span>
+                                <p className="text-sm 2xl:text-base font-medium text-primary">
+                                    {fileSettings?.targetFormat === 'png' ? 'Compression' : 'Quality'}
+                                </p>
+                                <span className="text-sm 2xl:text-base font-medium text-primary">
+                                    {fileSettings?.targetFormat === 'png'
+                                        ? quality >= 100 ? 'None' : quality <= 10 ? 'Max' : `${100 - quality}%`
+                                        : quality >= 100 && fileSettings?.targetFormat === 'webp' ? 'Lossless' : `${quality}%`
+                                    }
+                                </span>
                             </div>
                             <Slider
                                 min={1}
@@ -288,6 +295,12 @@ export default function FileSettingsDialog({ file }: { file: File }) {
                                 onValueChange={v => setQuality(Array.isArray(v) ? v[0] : v)}
                                 className="w-full"
                             />
+                            {fileSettings?.targetFormat === 'png' && (
+                                <p className="text-xs text-muted-foreground">Higher = larger file, faster. Lower = smaller file, slower.</p>
+                            )}
+                            {fileSettings?.targetFormat === 'webp' && quality >= 100 && (
+                                <p className="text-xs text-muted-foreground">Lossless mode — no quality loss, possible larger file.</p>
+                            )}
                         </div>
                     )}
 

@@ -99,13 +99,34 @@ function normalizeFormat(fmt) {
   return fmt
 }
 
+// Build Sharp format options for a given target format and quality (1–100).
+// Centralised so both single-file and bulk-convert use identical logic.
+function sharpFormatOptions(sharpFormat, quality) {
+  if (sharpFormat === 'png') {
+    // Sharp ignores `quality` for PNG — map to compressionLevel (0=fast/large, 9=slow/small).
+    return { compressionLevel: Math.round((100 - quality) / 100 * 9) }
+  }
+  if (sharpFormat === 'webp') {
+    // At quality 100 use lossless — avoids the lossy-at-max bloat vs a lossless source.
+    return quality >= 100 ? { lossless: true } : { quality }
+  }
+  if (sharpFormat === 'gif') {
+    // Sharp GIF output ignores quality entirely.
+    return {}
+  }
+  // jpeg, avif, heif, tiff — quality maps directly
+  return { quality }
+}
+
 function registerConvertHandlers() {
   ipcMain.handle('convert-file', async (_event, buffer, targetFormat, quality = 60, imageOptions = {}) => {
     const { width, height, fit, keepMetadata = true } = imageOptions
     const sharpFormat = normalizeFormat(targetFormat)
     const buf = Buffer.from(buffer)
-    // SVG needs density (DPI) set at read time for proper rasterization
-    const isSvg = buf.subarray(0, 100).toString().includes('<svg')
+    // SVG needs density (DPI) set at read time for proper rasterization.
+    // Check the first 512 bytes to handle <?xml ...?> preambles and BOMs.
+    const header = buf.subarray(0, 512).toString('utf8')
+    const isSvg = header.includes('<svg') || (header.includes('<?xml') && header.includes('<svg'))
     let pipeline = isSvg ? sharp(buf, { density: 300 }) : sharp(buf)
 
     if (keepMetadata) pipeline = pipeline.keepMetadata()
@@ -119,7 +140,7 @@ function registerConvertHandlers() {
       })
     }
 
-    const result = await pipeline.toFormat(sharpFormat, { quality }).toBuffer()
+    const result = await pipeline.toFormat(sharpFormat, sharpFormatOptions(sharpFormat, quality)).toBuffer()
     return result
   })
 
@@ -232,4 +253,4 @@ function registerConvertHandlers() {
   })
 }
 
-module.exports = { registerConvertHandlers }
+module.exports = { registerConvertHandlers, normalizeFormat, sharpFormatOptions }

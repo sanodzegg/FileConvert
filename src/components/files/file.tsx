@@ -57,6 +57,13 @@ export default function File({ data }: { data: File }) {
     const estimatedSize = targetFormat && ext ? estimateOutputSize(data.size, ext, targetFormat, estimateQuality, conversionRatios) : null
     const learned = ext && targetFormat ? isLearnedEstimate(ext, targetFormat, conversionRatios) : false
 
+    const LOSSLESS_EXTS = new Set(['png', 'tiff', 'tif', 'gif', 'bmp', 'svg'])
+    const LOSSY_FORMATS = new Set(['jpg', 'jpeg', 'webp', 'avif'])
+    const isLosslessSource = ext ? LOSSLESS_EXTS.has(ext.toLowerCase()) : false
+    const isLossyTarget = targetFormat ? LOSSY_FORMATS.has(targetFormat.toLowerCase()) : false
+    const isWebpLossless = targetFormat === 'webp' && effectiveQuality >= 100
+    const sizeIncreaseWarning = isLosslessSource && isLossyTarget && !isWebpLossless && effectiveQuality >= 90 && estimatedSize !== null && estimatedSize >= data.size
+
     const handleConvertSingle = () => convertSingle(data, {
         quality, imageQuality, fileSettings, convertedFiles, convertingFiles: convertingFilesMap, startConversion, setConvertedFile, setFailedFile, markFileConverting, unmarkFileConverting, removeFile, plan, onConversionSuccess, onBatchComplete,
     })
@@ -85,7 +92,14 @@ export default function File({ data }: { data: File }) {
                                     → <span className={estimatedSize < data.size ? 'text-green-500' : 'text-yellow-500'}>~{formatBytes(estimatedSize)}</span>
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                    <p className="text-sm">{learned ? 'Estimated from your previous conversions' : 'Rough estimate — improves as you convert'}</p>
+                                    <p className="text-sm">
+                                        {sizeIncreaseWarning
+                                            ? `Quality ${effectiveQuality}% is near-lossless on a lossless source — lower quality for a smaller file`
+                                            : learned
+                                                ? 'Estimated from your previous conversions'
+                                                : 'Rough estimate — improves as you convert'
+                                        }
+                                    </p>
                                 </TooltipContent>
                             </Tooltip>
                         )}

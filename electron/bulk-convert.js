@@ -1,6 +1,7 @@
 const { ipcMain, dialog, app } = require('electron')
 const path = require('path')
 const fs = require('fs')
+const { normalizeFormat, sharpFormatOptions } = require('./convert')
 
 const sharpPath = app.isPackaged
   ? path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules', 'sharp')
@@ -68,8 +69,10 @@ async function convertFile(srcPath, targetFormat, quality, outputMode, deleteOri
   const originalSize = srcStat.size
 
   const isSvg = path.extname(srcPath).toLowerCase() === '.svg'
+  const sharpFormat = normalizeFormat(targetFormat)
+
   await sharp(srcPath, isSvg ? { density: 300 } : {})
-    .toFormat(targetFormat, { quality })
+    .toFormat(sharpFormat, sharpFormatOptions(sharpFormat, quality))
     .toFile(destPath)
 
   const destStat = fs.statSync(destPath)
