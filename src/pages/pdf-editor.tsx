@@ -53,7 +53,7 @@ function DropZone({ onFile }: { onFile: (file: PdfFile) => void }) {
       onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragging(false) }}
       onDrop={onDrop}
       className={cn(
-        'flex flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed p-16 text-center transition-colors',
+        'flex flex-col items-center justify-center h-90 gap-4 rounded-xl border-2 border-dashed p-16 text-center transition-colors',
         dragging ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50 hover:bg-accent/30'
       )}
     >

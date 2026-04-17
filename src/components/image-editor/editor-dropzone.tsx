@@ -40,7 +40,7 @@ export default function EditorDropzone({ onFile }: Props) {
                 onDragOver={e => e.preventDefault()}
                 onDragEnter={() => wrapperRef.current?.classList.add('dragenter')}
                 onDragLeave={() => wrapperRef.current?.classList.remove('dragenter')}
-                className="flex flex-col items-center justify-center py-10 w-full h-72 border border-border hover:border-primary rounded-3xl border-dashed transition-colors cursor-pointer gap-4 [&.dragenter]:bg-accent"
+                className="flex flex-col items-center justify-center h-90 py-10 w-full border border-border hover:border-primary rounded-3xl border-dashed transition-colors cursor-pointer gap-4 [&.dragenter]:bg-accent"
             >
                 <Button onClick={() => inputRef.current?.click()} variant="outline" className="w-20 h-20 border-border hover:border-primary transition-colors">
                     <Import className="size-10 stroke-primary" />

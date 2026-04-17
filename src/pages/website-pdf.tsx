@@ -152,7 +152,6 @@ export default function WebsitePdf() {
 
           {/* URL */}
           <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">URL</Label>
             <Input
               placeholder="https://example.com"
               value={url}

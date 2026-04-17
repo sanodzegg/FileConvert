@@ -221,7 +221,7 @@ export default function PaletteExtractor() {
             onDragOver={e => { e.preventDefault(); setDragOver(true) }}
             onDragLeave={e => { if (!dropzoneRef.current?.contains(e.relatedTarget as Node)) setDragOver(false) }}
             className={cn(
-              "flex flex-col items-center justify-center py-10 w-full h-72 border border-border hover:border-primary rounded-3xl border-dashed transition-colors cursor-pointer gap-4",
+              "flex flex-col items-center justify-center py-10 w-full h-90 border border-border hover:border-primary rounded-3xl border-dashed transition-colors cursor-pointer gap-4",
               dragOver && "bg-accent"
             )}
           >

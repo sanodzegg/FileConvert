@@ -56,7 +56,7 @@ export default function SvgDropzone({ onSvg }: Props) {
                     onDragOver={e => e.preventDefault()}
                     onDragEnter={() => setDragging(true)}
                     onDragLeave={() => setDragging(false)}
-                    className={`flex flex-col items-center justify-center py-10 w-full h-72 border border-dashed border-border rounded-3xl transition-colors gap-4 cursor-pointer ${dragging ? 'bg-accent border-primary' : 'hover:border-primary'}`}
+                    className={`flex flex-col items-center justify-center py-10 w-full h-90 border border-dashed border-border rounded-3xl transition-colors gap-4 cursor-pointer ${dragging ? 'bg-accent border-primary' : 'hover:border-primary'}`}
                 >
                     <Button onClick={() => inputRef.current?.click()} variant="outline" className="w-20 h-20 border-border hover:border-primary transition-colors">
                         <Import className="size-10 stroke-primary" />

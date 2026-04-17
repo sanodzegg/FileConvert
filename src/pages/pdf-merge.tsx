@@ -114,7 +114,6 @@ export default function PdfMerge() {
         {/* Left: controls */}
         <div className="w-64 shrink-0 space-y-4">
           <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">PDF files</Label>
             <button
               onClick={addFiles}
               disabled={isMerging}

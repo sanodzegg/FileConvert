@@ -114,7 +114,6 @@ export default function BatchRename() {
 
           {/* Folder drop zone */}
           <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Folder</Label>
             <div
               onClick={pickFolder}
               className="w-full rounded-xl border border-dashed border-border p-4 flex flex-col items-center gap-2 text-center transition-colors cursor-pointer hover:border-primary/50 hover:bg-accent/50"
