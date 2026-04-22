@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react'
+import { create } from 'zustand'
 import { supabase } from './supabase'
+import { useAuthStore } from '@/store/useAuthStore'
 import type { User } from '@supabase/supabase-js'
 
 export type EngineType = 'image' | 'document' | 'video' | 'audio'
@@ -93,7 +95,13 @@ function getLocal(): ConversionCounts {
 
 function setLocal(counts: ConversionCounts) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(counts))
+    useCountsStore.setState({ counts })
 }
+
+// Reactive store so UI re-renders when counts change (sign-in merge, increments, Realtime overwrites)
+export const useCountsStore = create<{ counts: ConversionCounts }>()(() => ({
+    counts: getLocal(),
+}))
 
 export function incrementLocalCount(engine: EngineType) {
     const counts = getLocal()
@@ -111,14 +119,12 @@ export function getLocalCounts(): ConversionCounts {
 }
 
 export function isAtLimit(engine: EngineType, plan: string): boolean {
-    if (plan === 'limited') {
-        const daily = getDailyLocal()
-        return daily[engine] >= DAILY_LIMITS[engine]
-    }
-    if (plan !== 'trial') return false
+    if (plan !== 'trial' && plan !== 'limited') return false
+    // Per-category: if trial budget remains, gate on trial total; otherwise on daily window.
+    // This way hitting the trial cap on one category doesn't retroactively put every other
+    // category on a daily leash.
     const counts = getLocal()
     if (counts[engine] < LIMITS[engine]) return false
-    // Trial limit hit — fall through to daily window
     const daily = getDailyLocal()
     return daily[engine] >= DAILY_LIMITS[engine]
 }
@@ -166,6 +172,52 @@ export function useConversionCount(user: User | null, plan: string) {
                 synced.current = true
             })
     }, [user, plan])
+
+    // Listen for manual DB edits to conversion_counts via Realtime.
+    // Supabase is authoritative here — we overwrite local outright (no Math.max merge).
+    useEffect(() => {
+        if (!user) return
+        const channel = supabase
+            .channel(`counts-${user.id}`)
+            .on(
+                'postgres_changes',
+                { event: 'UPDATE', schema: 'public', table: 'conversion_counts' },
+                (payload) => {
+                    if (payload.new.user_id !== user.id) return
+                    const remote: ConversionCounts = {
+                        image: payload.new.image_count ?? 0,
+                        document: payload.new.document_count ?? 0,
+                        video: payload.new.video_count ?? 0,
+                        audio: payload.new.audio_count ?? 0,
+                    }
+                    // Echo guard: our own syncCountToServer round-trips back here
+                    const local = getLocal()
+                    if (remote.image === local.image && remote.document === local.document
+                        && remote.video === local.video && remote.audio === local.audio) return
+
+                    setLocal(remote)
+
+                    // If all categories are back within trial limits, clear daily window
+                    // and auto-revert limited → trial (support resetting a user's plan by
+                    // just lowering their counts in Supabase)
+                    const allUnderTrial = remote.image < LIMITS.image && remote.document < LIMITS.document
+                        && remote.video < LIMITS.video && remote.audio < LIMITS.audio
+                    if (allUnderTrial) {
+                        localStorage.removeItem(DAILY_STORAGE_KEY)
+                        const { plan: currentPlan, setPlan } = useAuthStore.getState()
+                        if (currentPlan === 'limited') {
+                            setPlan('trial')
+                            supabase.from('users').update({ plan: 'trial' }).eq('id', user.id)
+                                .then(({ error }) => {
+                                    if (error) console.error('[conversionCount] failed to revert plan:', error)
+                                })
+                        }
+                    }
+                }
+            )
+            .subscribe()
+        return () => { supabase.removeChannel(channel) }
+    }, [user])
 
     // When online, sync local increments to server
     function syncCountToServer() {

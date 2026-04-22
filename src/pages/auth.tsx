@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/useAuth'
-import { getLocalCounts } from '@/lib/useConversionCount'
+import { useCountsStore } from '@/lib/useConversionCount'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -13,6 +13,7 @@ type Mode = 'login' | 'signup'
 
 export default function Auth() {
     const { user, plan, loading } = useAuth()
+    const counts = useCountsStore(s => s.counts)
     const [mode, setMode] = useState<Mode>('login')
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
@@ -67,8 +68,6 @@ export default function Auth() {
     if (loading) return null
 
     if (user) {
-        const counts = getLocalCounts()
-
         return (
             <section className="section py-8">
                 <div className="mb-6">

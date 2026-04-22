@@ -38,6 +38,35 @@ async function fetchAndSetPlan(u: User) {
     useAuthStore.setState({ user: u, plan, loading: false })
 }
 
+// Listen for manual DB edits to users.plan via Realtime — Supabase is authoritative
+let planChannel: ReturnType<typeof supabase.channel> | null = null
+
+function subscribeToPlanChanges(userId: string) {
+    unsubscribeFromPlanChanges()
+    planChannel = supabase
+        .channel(`plan-${userId}`)
+        .on(
+            'postgres_changes',
+            { event: 'UPDATE', schema: 'public', table: 'users' },
+            (payload) => {
+                if (payload.new.id !== userId) return
+                const fresh: Plan = (payload.new.plan as Plan) ?? 'trial'
+                if (fresh !== useAuthStore.getState().plan) {
+                    storePlan(fresh)
+                    useAuthStore.setState({ plan: fresh })
+                }
+            }
+        )
+        .subscribe()
+}
+
+function unsubscribeFromPlanChanges() {
+    if (planChannel) {
+        supabase.removeChannel(planChannel)
+        planChannel = null
+    }
+}
+
 supabase.auth.getSession().then(async ({ data }) => {
     const u = data.session?.user ?? null
     if (!u) {
@@ -45,12 +74,15 @@ supabase.auth.getSession().then(async ({ data }) => {
         return
     }
     await fetchAndSetPlan(u)
+    subscribeToPlanChanges(u.id)
 })
 
 supabase.auth.onAuthStateChange((event, session) => {
     if (event === 'SIGNED_OUT') {
         useAuthStore.setState({ user: null, loading: false })
+        unsubscribeFromPlanChanges()
     } else if (event === 'SIGNED_IN' && session?.user) {
         fetchAndSetPlan(session.user)
+        subscribeToPlanChanges(session.user.id)
     }
 })

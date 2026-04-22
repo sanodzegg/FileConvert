@@ -35,16 +35,16 @@ export function UsageCard({ plan, counts }: UsageCardProps) {
     const daily = getDailyCounts()
 
     const rows: { label: string; used: number; limit: number; isDaily: boolean }[] = isFreeplan ? [
-        plan === 'limited' || counts.image >= TRIAL_LIMITS.image
+        counts.image >= TRIAL_LIMITS.image
             ? { label: 'Images', used: daily.image, limit: LIMITED_DAILY_LIMITS.image, isDaily: true }
             : { label: 'Images', used: counts.image, limit: TRIAL_LIMITS.image, isDaily: false },
-        plan === 'limited' || counts.document >= TRIAL_LIMITS.document
+        counts.document >= TRIAL_LIMITS.document
             ? { label: 'Documents', used: daily.document, limit: LIMITED_DAILY_LIMITS.document, isDaily: true }
             : { label: 'Documents', used: counts.document, limit: TRIAL_LIMITS.document, isDaily: false },
-        plan === 'limited' || counts.video >= TRIAL_LIMITS.video
+        counts.video >= TRIAL_LIMITS.video
             ? { label: 'Videos', used: daily.video, limit: LIMITED_DAILY_LIMITS.video, isDaily: true }
             : { label: 'Videos', used: counts.video, limit: TRIAL_LIMITS.video, isDaily: false },
-        plan === 'limited' || counts.audio >= TRIAL_LIMITS.audio
+        counts.audio >= TRIAL_LIMITS.audio
             ? { label: 'Audio', used: daily.audio, limit: LIMITED_DAILY_LIMITS.audio, isDaily: true }
             : { label: 'Audio', used: counts.audio, limit: TRIAL_LIMITS.audio, isDaily: false },
     ] : []

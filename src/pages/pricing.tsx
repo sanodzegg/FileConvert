@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Clock, Zap, Star, Timer } from 'lucide-react'
 import { PricingCard } from '@/components/pricing/pricing-card'
 import { useAuth } from '@/lib/useAuth'
-import { isTrialExhausted } from '@/lib/useConversionCount'
+import { useCountsStore, TRIAL_LIMITS } from '@/lib/useConversionCount'
 import pricingBgDark from '@/assets/pricing-bg.webm'
 import pricingBgLight from '@/assets/pricing-bg-light.webm'
 import { useTheme } from '@/components/theme/theme-provider'
@@ -87,11 +87,13 @@ export default function Pricing() {
     const { plan } = useAuth()
     const [interval, setInterval] = useState<Interval>('annual')
     const [videoReady, setVideoReady] = useState(false)
-    const showLimited = plan === 'limited' || (plan === 'trial' && isTrialExhausted())
+    const counts = useCountsStore(s => s.counts)
+    const trialExhausted = counts.image >= TRIAL_LIMITS.image || counts.document >= TRIAL_LIMITS.document
+        || counts.video >= TRIAL_LIMITS.video || counts.audio >= TRIAL_LIMITS.audio
+    const showLimited = plan === 'limited' || (plan === 'trial' && trialExhausted)
 
     const pricingBg = theme === 'dark' ? pricingBgDark : pricingBgLight
 
-    console.log(pricingBg)
     return (
         <section className="relative overflow-hidden min-h-[calc(100vh-var(--nav-height))]">
             <div className='section py-8 2xl:py-12'>
