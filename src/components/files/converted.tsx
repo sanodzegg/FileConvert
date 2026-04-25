@@ -1,5 +1,6 @@
 import { useConvertStore } from "@/store/useConvertStore"
 import { useEffect, useRef, useState } from "react"
+import { useVirtualizer } from "@tanstack/react-virtual"
 import type { ConvertedFile } from "@/types"
 import { Button } from "../ui/button"
 import { Check, Download, Loader2, RefreshCcw } from "lucide-react"
@@ -21,6 +22,20 @@ export default function ConvertedFiles() {
 
     const [snapshot, setSnapshot] = useState<ConvertedFile[]>([])
     const [isZipping, setIsZipping] = useState(false)
+    const scrollRef = useRef<HTMLDivElement>(null)
+
+    const ITEM_HEIGHT = 72
+    const ITEM_GAP = 10
+    const VIRTUALIZE_THRESHOLD = 20
+    const LIST_HEIGHT = 560
+
+    const virtualizer = useVirtualizer({
+        count: snapshot.length,
+        getScrollElement: () => scrollRef.current,
+        estimateSize: () => ITEM_HEIGHT + ITEM_GAP,
+        overscan: 5,
+        enabled: snapshot.length >= VIRTUALIZE_THRESHOLD,
+    })
 
     // Track which keys we've already auto-saved to avoid double-saving
     const autoSavedKeys = useRef<Set<string>>(new Set())
@@ -123,39 +138,80 @@ export default function ConvertedFiles() {
                 </div>
             </div>
             {snapshot.length > 0 && (
-                <ul className="space-y-2.5 2xl:space-y-3">
-                    {snapshot.map((f) => (
-                        <li key={`${f.name}-${f.inputSize}`} className="flex items-center justify-between p-4 2xl:p-5 rounded-2xl border border-accent bg-secondary/30">
-                            <div className="flex items-center gap-2 min-w-0">
-                                <Tooltip>
-                                    <TooltipTrigger className="flex-1 min-w-0 text-left">
-                                        <span className="text-sm 2xl:text-base text-accent-foreground font-body truncate cursor-default block w-full">{f.name}</span>
-                                        <span className="text-xs 2xl:text-sm text-accent-foreground/50 font-body">{formatBytes(f.blob.size)}</span>
-                                    </TooltipTrigger>
-                                    <TooltipContent><p className="text-sm 2xl:text-base">{f.name}</p></TooltipContent>
-                                </Tooltip>
-                                {f.customized && (
-                                    <span className="shrink-0 text-xs 2xl:text-sm font-medium px-1.5 py-0.5 rounded-md bg-yellow-400/20 text-yellow-600 dark:text-yellow-400 border border-yellow-400/30">
-                                        Modified
-                                    </span>
-                                )}
-                            </div>
-                            <div className="flex items-center gap-2 ml-2 shrink-0">
-                                {f.autoSaved ? (
-                                    <span className="flex items-center gap-1 text-xs 2xl:text-sm font-medium px-2.5 py-1.5 rounded-xl bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20">
-                                        <Check className="size-3.5" />
-                                        Saved
-                                    </span>
-                                ) : (
-                                    <Button variant="secondary" onClick={() => handleDownload(f.blob, f.name)} className="text-xs 2xl:text-sm text-primary">
-                                        <Download className="size-3.5 2xl:size-4 mr-1" />
-                                        Download
-                                    </Button>
-                                )}
-                            </div>
-                        </li>
-                    ))}
-                </ul>
+                snapshot.length >= VIRTUALIZE_THRESHOLD ? (
+                    <div ref={scrollRef} style={{ height: LIST_HEIGHT, overflowY: 'auto', scrollbarWidth: 'none' }}>
+                        <ul style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
+                            {virtualizer.getVirtualItems().map((row) => {
+                                const f = snapshot[row.index]
+                                return (
+                                    <li key={`${f.name}-${f.inputSize}`} style={{ position: 'absolute', top: row.start, left: 0, right: 0, paddingBottom: ITEM_GAP }} className="flex items-center justify-between p-4 2xl:p-5 rounded-2xl border border-accent bg-secondary/30">
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            <Tooltip>
+                                                <TooltipTrigger className="flex-1 min-w-0 text-left">
+                                                    <span className="text-sm 2xl:text-base text-accent-foreground font-body truncate cursor-default block w-full">{f.name}</span>
+                                                    <span className="text-xs 2xl:text-sm text-accent-foreground/50 font-body">{formatBytes(f.blob.size)}</span>
+                                                </TooltipTrigger>
+                                                <TooltipContent><p className="text-sm 2xl:text-base">{f.name}</p></TooltipContent>
+                                            </Tooltip>
+                                            {f.customized && (
+                                                <span className="shrink-0 text-xs 2xl:text-sm font-medium px-1.5 py-0.5 rounded-md bg-yellow-400/20 text-yellow-600 dark:text-yellow-400 border border-yellow-400/30">
+                                                    Modified
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-2 ml-2 shrink-0">
+                                            {f.autoSaved ? (
+                                                <span className="flex items-center gap-1 text-xs 2xl:text-sm font-medium px-2.5 py-1.5 rounded-xl bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20">
+                                                    <Check className="size-3.5" />
+                                                    Saved
+                                                </span>
+                                            ) : (
+                                                <Button variant="secondary" onClick={() => handleDownload(f.blob, f.name)} className="text-xs 2xl:text-sm text-primary">
+                                                    <Download className="size-3.5 2xl:size-4 mr-1" />
+                                                    Download
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </li>
+                                )
+                            })}
+                        </ul>
+                    </div>
+                ) : (
+                    <ul className="space-y-2.5 2xl:space-y-3">
+                        {snapshot.map((f) => (
+                            <li key={`${f.name}-${f.inputSize}`} className="flex items-center justify-between p-4 2xl:p-5 rounded-2xl border border-accent bg-secondary/30">
+                                <div className="flex items-center gap-2 min-w-0">
+                                    <Tooltip>
+                                        <TooltipTrigger className="flex-1 min-w-0 text-left">
+                                            <span className="text-sm 2xl:text-base text-accent-foreground font-body truncate cursor-default block w-full">{f.name}</span>
+                                            <span className="text-xs 2xl:text-sm text-accent-foreground/50 font-body">{formatBytes(f.blob.size)}</span>
+                                        </TooltipTrigger>
+                                        <TooltipContent><p className="text-sm 2xl:text-base">{f.name}</p></TooltipContent>
+                                    </Tooltip>
+                                    {f.customized && (
+                                        <span className="shrink-0 text-xs 2xl:text-sm font-medium px-1.5 py-0.5 rounded-md bg-yellow-400/20 text-yellow-600 dark:text-yellow-400 border border-yellow-400/30">
+                                            Modified
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="flex items-center gap-2 ml-2 shrink-0">
+                                    {f.autoSaved ? (
+                                        <span className="flex items-center gap-1 text-xs 2xl:text-sm font-medium px-2.5 py-1.5 rounded-xl bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20">
+                                            <Check className="size-3.5" />
+                                            Saved
+                                        </span>
+                                    ) : (
+                                        <Button variant="secondary" onClick={() => handleDownload(f.blob, f.name)} className="text-xs 2xl:text-sm text-primary">
+                                            <Download className="size-3.5 2xl:size-4 mr-1" />
+                                            Download
+                                        </Button>
+                                    )}
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
+                )
             )}
 
             <ConversionStats
