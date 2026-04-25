@@ -1,8 +1,10 @@
+import { createElement } from 'react'
 import { getEngineForFile } from '@/engines/engineRegistry'
 import { fileKey } from '@/utils/fileUtils'
 import type { ConvertStore } from '@/store/useConvertStore'
-import { isAtLimit, isTrialExhausted, incrementLocalCount, getTrialScore, getLocalCounts, WEIGHTS } from '@/lib/useConversionCount'
+import { isAtLimit, isTrialExhausted, incrementLocalCount, getTrialScore, getLocalCounts, getDailyCounts, LIMITED_DAILY_LIMITS, WEIGHTS } from '@/lib/useConversionCount'
 import { toEngineType } from '@/lib/ConversionCountContext'
+import { toast } from 'sonner'
 
 type ConversionDeps = Pick<
   ConvertStore,
@@ -22,6 +24,7 @@ type ConversionDeps = Pick<
   onPlanExhausted?: () => void
   onConversionSuccess?: (engineId: string) => void
   onBatchComplete?: (successCount: number, totalCount: number) => void
+  onNavigateToPricing?: () => void
 }
 
 function getDefaultQualityForFile(file: File, deps: ConversionDeps): number {
@@ -147,6 +150,51 @@ export async function convertAll(files: File[], deps: ConversionDeps): Promise<v
     deps.onPlanExhausted?.()
   }
 
+  // Pre-flight: count how many files will be blocked by the daily limit.
+  // Files assigned 'limited' plan compete for the daily bucket; check upfront
+  // so we can skip them cleanly and show one clear toast instead of per-file errors.
+  const dailyNow = getDailyCounts()
+  const dailyUsed: Record<string, number> = {
+    image: dailyNow.image,
+    document: dailyNow.document,
+    video: dailyNow.video,
+    audio: dailyNow.audio,
+  }
+  const blockedByDaily = new Set<File>()
+
+  for (const f of pending) {
+    if (filePlans.get(f) !== 'limited') continue
+    const engineId = getEngineForFile(f)?.id ?? ''
+    const limitType = toEngineType(engineId)
+    if (!limitType) continue
+    const used = dailyUsed[limitType] ?? 0
+    if (used >= LIMITED_DAILY_LIMITS[limitType]) {
+      blockedByDaily.add(f)
+    } else {
+      dailyUsed[limitType] = used + 1
+    }
+  }
+
+  if (blockedByDaily.size > 0) {
+    const n = blockedByDaily.size
+    toast.warning(`${n} file${n !== 1 ? 's' : ''} skipped — daily limit reached`, {
+      description: createElement('span', null,
+        'These files will be available again tomorrow. ',
+        createElement('button', {
+          onClick: () => deps.onNavigateToPricing?.(),
+          style: { textDecoration: 'underline', cursor: 'pointer' },
+        }, 'Upgrade to Pro')
+      ),
+      duration: 6000,
+    })
+    for (const f of blockedByDaily) {
+      deps.setFailedFile(f, 'Daily limit reached. Try again tomorrow or upgrade to Pro.')
+    }
+  }
+
+  const dispatchPending = pending.filter(f => !blockedByDaily.has(f))
+  if (dispatchPending.length === 0) return
+
   let successCount = 0
   const wrappedDeps = {
     ...deps,
@@ -156,8 +204,8 @@ export async function convertAll(files: File[], deps: ConversionDeps): Promise<v
     },
   }
 
-  const images = pending.filter((f) => getEngineForFile(f)?.id === 'image')
-  const nonImages = pending.filter((f) => getEngineForFile(f)?.id !== 'image')
+  const images = dispatchPending.filter((f) => getEngineForFile(f)?.id === 'image')
+  const nonImages = dispatchPending.filter((f) => getEngineForFile(f)?.id !== 'image')
 
   const imagePromise = Promise.allSettled(
     images.map((f) => convertFile(f, filePlans.get(f) ?? deps.plan, wrappedDeps))
@@ -171,5 +219,5 @@ export async function convertAll(files: File[], deps: ConversionDeps): Promise<v
 
   await Promise.all([imagePromise, nonImagePromise])
 
-  deps.onBatchComplete?.(successCount, pending.length)
+  deps.onBatchComplete?.(successCount, dispatchPending.length)
 }

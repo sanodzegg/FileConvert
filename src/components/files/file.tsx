@@ -66,6 +66,7 @@ export default function File({ data }: { data: File }) {
 
     const handleConvertSingle = () => convertSingle(data, {
         quality, imageQuality, fileSettings, convertedFiles, convertingFiles: convertingFilesMap, startConversion, setConvertedFile, setFailedFile, markFileConverting, unmarkFileConverting, removeFile, plan, onConversionSuccess, onBatchComplete, onPlanExhausted,
+        onNavigateToPricing: () => navigate('/pricing'),
     })
 
     const handleEditInEditor = () => {

@@ -13,6 +13,7 @@ import { supabase } from './lib/supabase'
 import { SettingsConflictDialog } from './components/settings/settings-conflict-dialog'
 import { ConversionCountContext, toEngineType } from './lib/ConversionCountContext'
 import { Toaster } from './components/ui/sonner'
+import { toast } from 'sonner'
 
 const splash = document.getElementById('splash')
 if (splash) splash.remove();
@@ -44,6 +45,12 @@ function App() {
       ? `${successCount} converted, ${failed} failed.`
       : `${successCount} file${successCount !== 1 ? 's' : ''} converted successfully.`
     window.electron.showNotification('Conversion complete', body)
+    if (failed > 0) {
+      toast.error(`${failed} file${failed !== 1 ? 's' : ''} failed — slots returned`, {
+        description: 'Those conversions were not counted against your limit.',
+        duration: 5000,
+      })
+    }
   }
 
   return (

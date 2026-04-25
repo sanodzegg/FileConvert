@@ -129,12 +129,15 @@ function setLocal(counts: ConversionCounts) {
 // actually on 'trial' again (per the app's rule: limited only when everything exhausted).
 // Runs in all code paths that touch counts, not just Realtime events — so admin edits,
 // sign-in merges, increments, and refunds all trigger the reconciliation equally.
+// Revert threshold is intentionally lower than EXHAUSTION_THRESHOLD so that a
+// single refund near the boundary (score 0.99 → 0.98) doesn't flip the plan back.
+// Only a meaningful drop — like an admin zeroing counts — crosses this line.
+const REVERT_THRESHOLD = 0.5
+
 function reconcilePlanWithCounts(counts: ConversionCounts) {
     const store = useAuthStore.getState()
     if (store.plan !== 'limited') return
-    if (getTrialScore(counts) >= EXHAUSTION_THRESHOLD) return
-    // setPlan is synchronous — update store first so any subsequent setLocal calls
-    // within the same tick see plan = 'trial' and skip this branch entirely.
+    if (getTrialScore(counts) >= REVERT_THRESHOLD) return
     store.setPlan('trial')
     const uid = store.user?.id
     if (uid) {
