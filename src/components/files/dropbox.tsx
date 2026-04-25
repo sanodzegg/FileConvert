@@ -14,7 +14,9 @@ export default function Dropbox() {
     const [activeGroup, setActiveGroup] = useState(groups[0]?.label ?? '');
     const { plan } = useAuth();
     const navigate = useNavigate();
-    const allLimited = isAtLimit('image', plan) && isAtLimit('document', plan) && isAtLimit('video', plan) && isAtLimit('audio', plan);
+    const allLimited = plan === 'limited' &&
+        isAtLimit('image', plan) && isAtLimit('document', plan) &&
+        isAtLimit('video', plan) && isAtLimit('audio', plan);
 
     const inputRef = useRef<HTMLInputElement>(null);
     const wrapperRef = useRef<HTMLDivElement>(null);

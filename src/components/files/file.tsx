@@ -43,7 +43,7 @@ export default function File({ data }: { data: File }) {
     const setPendingEditorFile = useConvertStore(s => s.setPendingEditorFile)
     const convertingFiles = useConvertStore(s => s.convertingFiles)
     const { quality, imageQuality, fileSettings, convertedFiles, convertingFiles: convertingFilesMap, startConversion, setConvertedFile, setFailedFile, markFileConverting, unmarkFileConverting, conversionRatios } = useConvertStore()
-    const { onConversionSuccess, onBatchComplete } = useConversionCountContext()
+    const { onConversionSuccess, onBatchComplete, onPlanExhausted } = useConversionCountContext()
     const { plan } = useAuth()
     const navigate = useNavigate()
 
@@ -65,7 +65,7 @@ export default function File({ data }: { data: File }) {
     const sizeIncreaseWarning = isLosslessSource && isLossyTarget && !isWebpLossless && effectiveQuality >= 90 && estimatedSize !== null && estimatedSize >= data.size
 
     const handleConvertSingle = () => convertSingle(data, {
-        quality, imageQuality, fileSettings, convertedFiles, convertingFiles: convertingFilesMap, startConversion, setConvertedFile, setFailedFile, markFileConverting, unmarkFileConverting, removeFile, plan, onConversionSuccess, onBatchComplete,
+        quality, imageQuality, fileSettings, convertedFiles, convertingFiles: convertingFilesMap, startConversion, setConvertedFile, setFailedFile, markFileConverting, unmarkFileConverting, removeFile, plan, onConversionSuccess, onBatchComplete, onPlanExhausted,
     })
 
     const handleEditInEditor = () => {

@@ -4,11 +4,13 @@ import type { EngineType } from './useConversionCount'
 interface ConversionCountContextValue {
     onConversionSuccess: (engineId: string) => void
     onBatchComplete: (successCount: number, totalCount: number) => void
+    onPlanExhausted: () => void
 }
 
 export const ConversionCountContext = createContext<ConversionCountContextValue>({
     onConversionSuccess: () => {},
     onBatchComplete: () => {},
+    onPlanExhausted: () => {},
 })
 
 export function useConversionCountContext() {

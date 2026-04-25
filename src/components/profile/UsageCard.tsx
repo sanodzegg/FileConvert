@@ -1,28 +1,20 @@
-import { TRIAL_LIMITS, LIMITED_DAILY_LIMITS, getDailyCounts } from '@/lib/useConversionCount'
+import { LIMITED_DAILY_LIMITS, getDailyCounts, getTrialScore, WEIGHTS } from '@/lib/useConversionCount'
 import type { ConversionCounts } from '@/lib/useConversionCount'
 import type { Plan } from '@/lib/useAuth'
 import { cn } from '@/lib/utils'
 import { Image, FileText, Video, Music } from 'lucide-react'
 
-function UsageBar({ used, limit }: { used: number; limit: number }) {
-    const pct = Math.min((used / limit) * 100, 100)
-    const isNear = pct >= 80
-    const isFull = pct >= 100
+function UsageBar({ pct, nearAt = 80, fullAt = 100 }: { pct: number; nearAt?: number; fullAt?: number }) {
+    const isNear = pct >= nearAt
+    const isFull = pct >= fullAt
     return (
         <div className="w-full h-1.5 rounded-full bg-accent overflow-hidden">
             <div
                 className={cn('h-full rounded-full transition-all', isFull ? 'bg-destructive' : isNear ? 'bg-yellow-500' : 'bg-primary')}
-                style={{ width: `${pct}%` }}
+                style={{ width: `${Math.min(pct, 100)}%` }}
             />
         </div>
     )
-}
-
-const ROW_ICONS = {
-    Images: Image,
-    Documents: FileText,
-    Videos: Video,
-    Audio: Music,
 }
 
 interface UsageCardProps {
@@ -31,24 +23,73 @@ interface UsageCardProps {
 }
 
 export function UsageCard({ plan, counts }: UsageCardProps) {
-    const isFreeplan = plan === 'trial' || plan === 'limited'
-    const daily = getDailyCounts()
+    const isLimited = plan === 'limited'
+    const isTrial = plan === 'trial'
 
-    const rows: { label: string; used: number; limit: number; isDaily: boolean }[] = isFreeplan ? [
-        counts.image >= TRIAL_LIMITS.image
-            ? { label: 'Images', used: daily.image, limit: LIMITED_DAILY_LIMITS.image, isDaily: true }
-            : { label: 'Images', used: counts.image, limit: TRIAL_LIMITS.image, isDaily: false },
-        counts.document >= TRIAL_LIMITS.document
-            ? { label: 'Documents', used: daily.document, limit: LIMITED_DAILY_LIMITS.document, isDaily: true }
-            : { label: 'Documents', used: counts.document, limit: TRIAL_LIMITS.document, isDaily: false },
-        counts.video >= TRIAL_LIMITS.video
-            ? { label: 'Videos', used: daily.video, limit: LIMITED_DAILY_LIMITS.video, isDaily: true }
-            : { label: 'Videos', used: counts.video, limit: TRIAL_LIMITS.video, isDaily: false },
-        counts.audio >= TRIAL_LIMITS.audio
-            ? { label: 'Audio', used: daily.audio, limit: LIMITED_DAILY_LIMITS.audio, isDaily: true }
-            : { label: 'Audio', used: counts.audio, limit: TRIAL_LIMITS.audio, isDaily: false },
-    ] : []
+    if (isLimited) {
+        const daily = getDailyCounts()
+        const rows = [
+            { label: 'Images', used: daily.image, limit: LIMITED_DAILY_LIMITS.image, icon: Image },
+            { label: 'Documents', used: daily.document, limit: LIMITED_DAILY_LIMITS.document, icon: FileText },
+            { label: 'Videos', used: daily.video, limit: LIMITED_DAILY_LIMITS.video, icon: Video },
+            { label: 'Audio', used: daily.audio, limit: LIMITED_DAILY_LIMITS.audio, icon: Music },
+        ]
+        return (
+            <div className="rounded-2xl border border-border p-5 space-y-3">
+                <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Usage today</p>
+                <div className="space-y-3">
+                    {rows.map(({ label, used, limit, icon: Icon }) => (
+                        <div key={label} className="space-y-1">
+                            <div className="flex items-center justify-between">
+                                <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                                    <Icon className="size-4" />
+                                    {label}
+                                </p>
+                                <p className="text-sm text-foreground tabular-nums">{used} / {limit} <span className="text-muted-foreground">today</span></p>
+                            </div>
+                            <UsageBar pct={(used / limit) * 100} />
+                        </div>
+                    ))}
+                </div>
+            </div>
+        )
+    }
 
+    if (isTrial) {
+        const score = getTrialScore(counts)
+        const scorePct = score * 100
+        const rows = [
+            { label: 'Images', value: counts.image, weight: WEIGHTS.image, icon: Image },
+            { label: 'Documents', value: counts.document, weight: WEIGHTS.document, icon: FileText },
+            { label: 'Videos', value: counts.video, weight: WEIGHTS.video, icon: Video },
+            { label: 'Audio', value: counts.audio, weight: WEIGHTS.audio, icon: Music },
+        ]
+        return (
+            <div className="rounded-2xl border border-border p-5 space-y-4">
+                <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Usage</p>
+                <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                    {rows.map(({ label, value, icon: Icon }) => (
+                        <div key={label} className="flex items-center justify-between">
+                            <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                                <Icon className="size-4" />
+                                {label}
+                            </p>
+                            <p className="text-sm text-foreground tabular-nums">{value}</p>
+                        </div>
+                    ))}
+                    <div className="col-span-2 pt-1 space-y-1.5">
+                        <div className="flex items-center justify-between">
+                            <p className="text-sm text-muted-foreground">Trial usage</p>
+                            <p className="text-sm text-foreground tabular-nums">{Math.round(scorePct)}%</p>
+                        </div>
+                        <UsageBar pct={scorePct} nearAt={85} fullAt={100} />
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
+    // paid plans — lifetime stats
     const totalStats = [
         { label: 'Images', value: counts.image, icon: Image },
         { label: 'Documents', value: counts.document, icon: FileText },
@@ -59,42 +100,19 @@ export function UsageCard({ plan, counts }: UsageCardProps) {
     return (
         <div className="rounded-2xl border border-border p-5 space-y-3">
             <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Usage</p>
-            {isFreeplan ? (
-                <div className="space-y-3">
-                    {rows.map(({ label, used, limit, isDaily }) => {
-                        const Icon = ROW_ICONS[label as keyof typeof ROW_ICONS]
-                        return (
-                            <div key={label} className="space-y-1">
-                                <div className="flex items-center justify-between">
-                                    <p className="text-sm text-muted-foreground flex items-center gap-1.5">
-                                        <Icon className="size-4" />
-                                        {label}
-                                    </p>
-                                    <p className="text-sm text-foreground tabular-nums">
-                                        {used} / {limit}
-                                        {isDaily && <span className="text-muted-foreground"> today</span>}
-                                    </p>
-                                </div>
-                                <UsageBar used={used} limit={limit} />
-                            </div>
-                        )
-                    })}
-                </div>
-            ) : (
-                <div className="grid grid-cols-2 gap-3">
-                    {totalStats.map(({ label, value, icon: Icon }) => (
-                        <div key={label} className="flex items-center gap-2.5">
-                            <div className="size-9 rounded-lg bg-foreground/5 flex items-center justify-center shrink-0">
-                                <Icon className="size-4 text-muted-foreground" />
-                            </div>
-                            <div>
-                                <p className="text-base font-medium text-foreground tabular-nums">{value.toLocaleString()}</p>
-                                <p className="text-sm text-muted-foreground">{label}</p>
-                            </div>
+            <div className="grid grid-cols-2 gap-3">
+                {totalStats.map(({ label, value, icon: Icon }) => (
+                    <div key={label} className="flex items-center gap-2.5">
+                        <div className="size-9 rounded-lg bg-foreground/5 flex items-center justify-center shrink-0">
+                            <Icon className="size-4 text-muted-foreground" />
                         </div>
-                    ))}
-                </div>
-            )}
+                        <div>
+                            <p className="text-base font-medium text-foreground tabular-nums">{value.toLocaleString()}</p>
+                            <p className="text-sm text-muted-foreground">{label}</p>
+                        </div>
+                    </div>
+                ))}
+            </div>
         </div>
     )
 }

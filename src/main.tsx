@@ -27,11 +27,15 @@ function App() {
     if (!type) return
     syncCountToServer()
     if (plan === 'trial' && isTrialExhausted()) {
-      setPlan('limited')
-      if (user) supabase.from('users').update({ plan: 'limited' }).eq('id', user.id).then(({ error }) => {
-        if (error) console.error('[auth] failed to persist limited plan:', error)
-      })
+      onPlanExhausted()
     }
+  }
+
+  function onPlanExhausted() {
+    setPlan('limited')
+    if (user) supabase.from('users').update({ plan: 'limited' }).eq('id', user.id).then(({ error }) => {
+      if (error) console.error('[auth] failed to persist limited plan:', error)
+    })
   }
 
   function onBatchComplete(successCount: number, totalCount: number) {
@@ -43,7 +47,7 @@ function App() {
   }
 
   return (
-    <ConversionCountContext.Provider value={{ onConversionSuccess, onBatchComplete }}>
+    <ConversionCountContext.Provider value={{ onConversionSuccess, onBatchComplete, onPlanExhausted }}>
       <Navigation />
       <Router />
       {conflictSettings && localAtConflict && (

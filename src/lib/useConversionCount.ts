@@ -16,11 +16,20 @@ export interface ConversionCounts {
 const STORAGE_KEY = 'cone_conversion_counts'
 const DAILY_STORAGE_KEY = 'cone_daily_counts'
 
+// Per-category weights: 1 / budget. Score = sum(count * weight), threshold at 0.9.
+// Budgets: 100 images, 20 docs, 20 videos, 20 audio.
+export const WEIGHTS = {
+    image: 1 / 100,
+    document: 1 / 20,
+    video: 1 / 20,
+    audio: 1 / 20,
+}
+
 const LIMITS: ConversionCounts = {
     image: 100,
-    document: 50,
+    document: 20,
     video: 20,
-    audio: 10,
+    audio: 20,
 }
 
 const DAILY_LIMITS: ConversionCounts = {
@@ -72,21 +81,20 @@ export function getDailyCounts(): DailyCounts {
     return getDailyLocal()
 }
 
-// Each category contributes equally (25%) to the exhaustion score regardless of
-// absolute cap size. Score = average of per-category fill ratios. Flip to 'limited'
-// at 75% — roughly equivalent to 3 of 4 categories fully used, or an equivalent mix.
-// This prevents a document-avoider from staying on trial indefinitely while having
-// burned through every other category.
-const EXHAUSTION_THRESHOLD = 0.75
+// Score = sum(count * weight), capped at 1.0 per category. Flip to 'limited' at 0.9.
+const EXHAUSTION_THRESHOLD = 1.0
+
+export function getTrialScore(counts: ConversionCounts): number {
+    return (
+        Math.min(counts.image * WEIGHTS.image, 1) +
+        Math.min(counts.document * WEIGHTS.document, 1) +
+        Math.min(counts.video * WEIGHTS.video, 1) +
+        Math.min(counts.audio * WEIGHTS.audio, 1)
+    )
+}
+
 export function isTrialExhausted(): boolean {
-    const counts = getLocal()
-    const score = (
-        Math.min(counts.image / LIMITS.image, 1) +
-        Math.min(counts.document / LIMITS.document, 1) +
-        Math.min(counts.video / LIMITS.video, 1) +
-        Math.min(counts.audio / LIMITS.audio, 1)
-    ) / 4
-    return score >= EXHAUSTION_THRESHOLD
+    return getTrialScore(getLocal()) >= EXHAUSTION_THRESHOLD
 }
 
 function getLocal(): ConversionCounts {
@@ -109,14 +117,10 @@ function setLocal(counts: ConversionCounts) {
     const prev = getLocal()
     localStorage.setItem(STORAGE_KEY, JSON.stringify(counts))
     useCountsStore.setState({ counts })
-    // If any category dropped back below its trial cap, its daily bucket is stale — clear it.
-    const categoryReverted = (
-        (prev.image >= LIMITS.image && counts.image < LIMITS.image) ||
-        (prev.document >= LIMITS.document && counts.document < LIMITS.document) ||
-        (prev.video >= LIMITS.video && counts.video < LIMITS.video) ||
-        (prev.audio >= LIMITS.audio && counts.audio < LIMITS.audio)
-    )
-    if (categoryReverted) localStorage.removeItem(DAILY_STORAGE_KEY)
+    // If the overall score dropped back below the threshold, daily buckets are stale — clear them.
+    if (getTrialScore(prev) >= EXHAUSTION_THRESHOLD && getTrialScore(counts) < EXHAUSTION_THRESHOLD) {
+        localStorage.removeItem(DAILY_STORAGE_KEY)
+    }
     reconcilePlanWithCounts(counts)
 }
 
@@ -128,13 +132,7 @@ function setLocal(counts: ConversionCounts) {
 function reconcilePlanWithCounts(counts: ConversionCounts) {
     const store = useAuthStore.getState()
     if (store.plan !== 'limited') return
-    const score = (
-        Math.min(counts.image / LIMITS.image, 1) +
-        Math.min(counts.document / LIMITS.document, 1) +
-        Math.min(counts.video / LIMITS.video, 1) +
-        Math.min(counts.audio / LIMITS.audio, 1)
-    ) / 4
-    if (score >= EXHAUSTION_THRESHOLD) return
+    if (getTrialScore(counts) >= EXHAUSTION_THRESHOLD) return
     // setPlan is synchronous — update store first so any subsequent setLocal calls
     // within the same tick see plan = 'trial' and skip this branch entirely.
     store.setPlan('trial')
@@ -168,33 +166,34 @@ function isSelfEcho(updatedAt: string | undefined): boolean {
 // reserved at the start of a conversion so parallel attempts can't all pass the
 // same limit check; call the returned refund fn if the conversion ends up failing
 // so the user doesn't lose a slot.
-export function incrementLocalCount(engine: EngineType, plan: string): () => void {
-    const counts = getLocal()
-    const isPaid = plan === 'monthly' || plan === 'annual' || plan === 'lifetime'
-    // Free plans past trial cap: stop inflating the total and track the daily window instead.
-    // Paid plans: always increment — the total is just a lifetime counter, no gating logic.
-    if (!isPaid && counts[engine] >= LIMITS[engine]) {
+// Returns [refund, reserved]. reserved=false means the limit was already full and
+// no slot was taken — caller must not proceed with the conversion.
+export function incrementLocalCount(engine: EngineType, plan: string): [() => void, boolean] {
+    // limited plan: track daily window only, not the lifetime total
+    if (plan === 'limited') {
         const daily = getDailyLocal()
-        if (daily[engine] >= DAILY_LIMITS[engine]) return () => {}
+        if (daily[engine] >= DAILY_LIMITS[engine]) return [() => {}, false]
         daily[engine] = (daily[engine] ?? 0) + 1
         setDailyLocal(daily)
-        return () => {
+        return [() => {
             const d = getDailyLocal()
             if (d[engine] > 0) {
                 d[engine] = d[engine] - 1
                 setDailyLocal(d)
             }
-        }
+        }, true]
     }
+    // trial + paid: always increment lifetime total
+    const counts = getLocal()
     counts[engine] = (counts[engine] ?? 0) + 1
     setLocal(counts)
-    return () => {
+    return [() => {
         const c = getLocal()
         if (c[engine] > 0) {
             c[engine] = c[engine] - 1
             setLocal(c)
         }
-    }
+    }, true]
 }
 
 export function getLocalCounts(): ConversionCounts {
@@ -203,13 +202,10 @@ export function getLocalCounts(): ConversionCounts {
 
 export function isAtLimit(engine: EngineType, plan: string): boolean {
     if (plan !== 'trial' && plan !== 'limited') return false
-    // Per-category: if trial budget remains, gate on trial total; otherwise on daily window.
-    // This way hitting the trial cap on one category doesn't retroactively put every other
-    // category on a daily leash.
-    const counts = getLocal()
-    if (counts[engine] < LIMITS[engine]) return false
-    const daily = getDailyLocal()
-    return daily[engine] >= DAILY_LIMITS[engine]
+    if (plan === 'limited') {
+        return getDailyLocal()[engine] >= DAILY_LIMITS[engine]
+    }
+    return getTrialScore(getLocal()) >= EXHAUSTION_THRESHOLD
 }
 
 export function useConversionCount(user: User | null) {

@@ -8,7 +8,7 @@ import { useAuth } from "@/lib/useAuth"
 
 export default function FileList() {
     const { files, fileSettings, quality, imageQuality, convertedCount, convertingTotal, convertingFiles, convertedFiles, failedFiles, setConvertedFile, setFailedFile, markFileConverting, unmarkFileConverting, startConversion, removeFile } = useConvertStore()
-    const { onConversionSuccess, onBatchComplete } = useConversionCountContext()
+    const { onConversionSuccess, onBatchComplete, onPlanExhausted } = useConversionCountContext()
     const { plan } = useAuth()
 
     const failedCount = Object.keys(failedFiles).length
@@ -31,6 +31,7 @@ export default function FileList() {
             plan,
             onConversionSuccess,
             onBatchComplete,
+            onPlanExhausted,
         })
     }
 
