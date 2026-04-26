@@ -42,8 +42,16 @@
     "win": {
       "icon": "build-assets/icon.ico",
       "target": [
-        "nsis"
+        "nsis",
+        "msix"
       ]
+    },
+    "msix": {
+      "identityName": "Conlab.ConeLab",
+      "publisher": "CN=2F9FE4F3-C390-4CF8-9EDF-67E5029D73CC",
+      "publisherDisplayName": "Conlab",
+      "applicationId": "ConeLab",
+      "backgroundColor": "#1a1a1a"
     },
     "files": [
       "dist/**",
