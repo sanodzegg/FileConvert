@@ -28,7 +28,7 @@ function registerLighthouseHandlers(mainWindow) {
 
   ipcMain.handle('lighthouse-check-update', () => {
     return new Promise((resolve) => {
-      const req = https.get('https://registry.npmjs.org/lighthouse/latest', { headers: { 'User-Agent': 'cone-app' } }, (res) => {
+      const req = https.get('https://registry.npmjs.org/lighthouse/latest', { headers: { 'User-Agent': 'conesoft-app' } }, (res) => {
         let data = ''
         res.on('data', chunk => { data += chunk })
         res.on('end', () => {
@@ -51,7 +51,7 @@ function registerLighthouseHandlers(mainWindow) {
 
       const pkgPath = path.join(LIGHTHOUSE_DIR, 'package.json')
       if (!fs.existsSync(pkgPath)) {
-        fs.writeFileSync(pkgPath, JSON.stringify({ name: 'cone-lighthouse', version: '1.0.0', private: true }))
+        fs.writeFileSync(pkgPath, JSON.stringify({ name: 'conesoft-lighthouse', version: '1.0.0', private: true }))
       }
 
       const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm'

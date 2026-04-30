@@ -35,7 +35,7 @@ type HistoryEntry = {
   scores: { desktop: Scores | null; mobile: Scores | null }
 }
 
-const HISTORY_KEY = 'cone_lighthouse_history'
+const HISTORY_KEY = 'conesoft_lighthouse_history'
 const MAX_HISTORY = 8
 
 // ─── Score helpers ─────────────────────────────────────────────────────────────
@@ -605,7 +605,7 @@ export default function Lighthouse() {
     window.electron.lighthouseStatus().then(s => {
       setStatus(s)
       if (s.installed && s.version) {
-        const CACHE_KEY = 'cone_lighthouse_update_cache'
+        const CACHE_KEY = 'conesoft_lighthouse_update_cache'
         const TTL = 24 * 60 * 60 * 1000
         try {
           const cached = JSON.parse(localStorage.getItem(CACHE_KEY) ?? '{}')
@@ -628,7 +628,7 @@ export default function Lighthouse() {
       } else if (data.status === 'done') {
         setInstallPct(100)
         if (data.version) {
-          localStorage.setItem('cone_lighthouse_update_cache', JSON.stringify({ latestVersion: data.version, ts: Date.now() }))
+          localStorage.setItem('conesoft_lighthouse_update_cache', JSON.stringify({ latestVersion: data.version, ts: Date.now() }))
         }
         setTimeout(() => {
           setInstalling(false)
@@ -780,7 +780,7 @@ export default function Lighthouse() {
           </div>
           {!installing && (
             <button
-              onClick={() => { localStorage.removeItem('cone_lighthouse_update_cache'); install() }}
+              onClick={() => { localStorage.removeItem('conesoft_lighthouse_update_cache'); install() }}
               className="text-xs font-medium text-yellow-500 hover:text-yellow-400 cursor-pointer transition-colors shrink-0"
             >
               Update now

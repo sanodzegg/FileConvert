@@ -1,6 +1,6 @@
 {
-  "name": "cone",
-  "version": "1.8.0",
+  "name": "conesoft",
+  "version": "1.9.0",
   "description": "Local-first desktop app for file conversion and media tooling. Convert images, video, audio, and documents entirely on-device. No uploads, no cloud.",
   "main": "main.js",
   "scripts": {
@@ -29,8 +29,8 @@
   "author": "",
   "license": "ISC",
   "build": {
-    "appId": "com.sanodzegg.cone",
-    "productName": "Cone",
+    "appId": "com.sanodzegg.conesoft",
+    "productName": "Conesoft",
     "mac": {
       "icon": "build-assets/icon.icns",
       "category": "public.app-category.graphics-design",
@@ -47,10 +47,10 @@
       ]
     },
     "msix": {
-      "identityName": "Conlab.ConeLab",
+      "identityName": "Conesoft.Conesoft",
       "publisher": "CN=2F9FE4F3-C390-4CF8-9EDF-67E5029D73CC",
-      "publisherDisplayName": "Conlab",
-      "applicationId": "ConeLab",
+      "publisherDisplayName": "Conesoft",
+      "applicationId": "Conesoft",
       "backgroundColor": "#1a1a1a"
     },
     "files": [

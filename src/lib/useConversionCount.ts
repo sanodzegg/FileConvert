@@ -13,8 +13,8 @@ export interface ConversionCounts {
     audio: number
 }
 
-const STORAGE_KEY = 'cone_conversion_counts'
-const DAILY_STORAGE_KEY = 'cone_daily_counts'
+const STORAGE_KEY = 'conesoft_conversion_counts'
+const DAILY_STORAGE_KEY = 'conesoft_daily_counts'
 
 // Per-category weights: 1 / budget. Score = sum(count * weight), threshold at 0.9.
 // Budgets: 100 images, 20 docs, 20 videos, 20 audio.

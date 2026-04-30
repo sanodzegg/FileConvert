@@ -16,7 +16,7 @@ import { X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner"
 
-export const PRICING_DISMISSED_KEY = 'cone_pricing_tab_dismissed'
+export const PRICING_DISMISSED_KEY = 'conesoft_pricing_tab_dismissed'
 
 const baseLinks = [
     { path: '/', label: 'Convert' },
@@ -47,8 +47,8 @@ export default function Navigation() {
         <section className="flex border-b border-b-gray-200 dark:border-b-gray-50/10 h-(--nav-height)">
             <div className="flex items-center justify-between py-2.5 section w-full">
                 <NavLink to={'/'} className="flex items-center justify-center gap-x-1 shrink-0">
-                    <img src={theme === 'dark' ? LogoDark : LogoLight} alt="Cone logo" className="select-none pointer-events-none h-8 w-8 2xl:h-12 2xl:w-12" />
-                    <h1 className="text-4xl 2xl:text-5xl text-black dark:text-white">Cone</h1>
+                    <img src={theme === 'dark' ? LogoDark : LogoLight} alt="Conesoft logo" className="select-none pointer-events-none h-8 w-8 2xl:h-12 2xl:w-12" />
+                    <h1 className="text-4xl 2xl:text-5xl text-black dark:text-white">Conesoft</h1>
                 </NavLink>
 
                 <nav className="w-full flex justify-end mr-10">

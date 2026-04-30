@@ -4,10 +4,10 @@ const path = require('path')
 // Register deep link protocol for OAuth callbacks
 if (process.defaultApp) {
   if (process.argv.length >= 2) {
-    app.setAsDefaultProtocolClient('cone', process.execPath, [path.resolve(process.argv[1])])
+    app.setAsDefaultProtocolClient('conesoft', process.execPath, [path.resolve(process.argv[1])])
   }
 } else {
-  app.setAsDefaultProtocolClient('cone')
+  app.setAsDefaultProtocolClient('conesoft')
 }
 const { registerConvertHandlers } = require('./electron/convert')
 const { registerBulkConvertHandlers } = require('./electron/bulk-convert')
@@ -77,7 +77,7 @@ app.on('open-url', (event, url) => {
 
 // Handle OAuth deep link callback (Windows — second instance)
 app.on('second-instance', (_event, argv) => {
-  const url = argv.find(arg => arg.startsWith('cone://'))
+  const url = argv.find(arg => arg.startsWith('conesoft://'))
   if (url && mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send('oauth-callback', url)
     if (mainWindow.isMinimized()) mainWindow.restore()

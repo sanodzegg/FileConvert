@@ -4,7 +4,7 @@ import type { User } from '@supabase/supabase-js'
 
 export type Plan = 'trial' | 'limited' | 'monthly' | 'annual' | 'lifetime'
 
-const PLAN_KEY = 'cone_plan'
+const PLAN_KEY = 'conesoft_plan'
 
 function getStoredPlan(): Plan {
     return (localStorage.getItem(PLAN_KEY) as Plan) ?? 'trial'

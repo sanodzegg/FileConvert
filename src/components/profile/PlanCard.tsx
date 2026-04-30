@@ -88,7 +88,7 @@ export function PlanCard({ plan }: PlanCardProps) {
                     </>
                 )}
                 {plan === 'lifetime' && (
-                    <p className="text-xs text-muted-foreground">No action needed — you own Cone forever.</p>
+                    <p className="text-xs text-muted-foreground">No action needed — you own Conesoft forever.</p>
                 )}
             </div>
         </div>

@@ -1,12 +1,12 @@
-# Cone — Project Reference
+# Conesoft — Project Reference
 
 Internal planning document. Used as context for AI-assisted development sessions.
 
 ---
 
-## What is Cone
+## What is Conesoft
 
-Cone is a **local-first Electron desktop app** for file conversion and media tooling. All processing runs on-device — no uploads, no cloud, no server required. Currently macOS + Windows.
+Conesoft is a **local-first Electron desktop app** for file conversion and media tooling. All processing runs on-device — no uploads, no cloud, no server required. Currently macOS + Windows.
 
 Current version: **1.4.0**
 

@@ -24,7 +24,7 @@ export default function Auth() {
 
     useEffect(() => {
         const unsub = window.electron.onOAuthCallback(async (url) => {
-            const hashParams = new URL(url.replace('cone://', 'https://cone.app/')).hash
+            const hashParams = new URL(url.replace('conesoft://', 'https://conesoft.app/')).hash
             const params = new URLSearchParams(hashParams.slice(1))
             const accessToken = params.get('access_token')
             const refreshToken = params.get('refresh_token')
@@ -47,7 +47,7 @@ export default function Auth() {
         setOauthLoading(provider)
         const { data, error } = await supabase.auth.signInWithOAuth({
             provider,
-            options: { skipBrowserRedirect: true, redirectTo: 'cone://auth' },
+            options: { skipBrowserRedirect: true, redirectTo: 'conesoft://auth' },
         })
         if (error) { setError(friendlyAuthError(error.message)); setOauthLoading(null); return }
         if (data.url) window.electron.openExternal(data.url)
@@ -99,7 +99,7 @@ export default function Auth() {
                 {mode === 'login' ? 'Sign in' : 'Create account'}
             </h2>
             <p className="text-sm text-muted-foreground mb-6">
-                {mode === 'login' ? 'Welcome back.' : 'Start using Cone with an account.'}
+                {mode === 'login' ? 'Welcome back.' : 'Start using Conesoft with an account.'}
             </p>
 
             <div className="space-y-2">

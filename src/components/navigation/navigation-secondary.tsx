@@ -14,7 +14,7 @@ import { Camera, ChevronRight, Crop, Download, FileDown, FileEdit, FilePlus, Fol
 import { useAuth } from "@/lib/useAuth";
 import { PRICING_DISMISSED_KEY } from "./navigation";
 
-const FAVORITES_KEY = 'cone_extension_favorites'
+const FAVORITES_KEY = 'conesoft_extension_favorites'
 
 function getFavorites(): string[] {
     try { return JSON.parse(localStorage.getItem(FAVORITES_KEY) ?? '[]') } catch { return [] }
